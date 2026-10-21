@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Grindstone</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: sticker-board practice deck — level rail · practice stage · related rail, on a deep ocean ground */
+:root{
+  --ground:#123E5A; --ground-2:#0C2F47; --ground-line:#1F5878;
+  --paper:#FFF1DC; --paper-2:#FFE2BC; --ink:#1B2A4E; --ink-soft:#4D5C82;
+  --mango:#FFB020; --coral:#FF5D5D; --mint:#2FD39A; --sky:#5BC8FF; --lilac:#B79CFF;
+  --on-ground:#E6F3FF; --on-ground-soft:#9FC3DE;
+  --f-display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+  --shadow:4px 4px 0 var(--ink);
+  --r:14px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--ground);color:var(--on-ground)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px;
+  background-image:radial-gradient(circle at 1px 1px,var(--ground-line) 1px,transparent 0);background-size:22px 22px}
+button{font:inherit;cursor:pointer;color:inherit}
+button:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--mango);outline-offset:2px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+.wrap{max-width:1280px;margin:0 auto}
+
+/* top bar */
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:14px 20px;padding-block:18px 14px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:40px;height:40px;border-radius:50%;background:conic-gradient(var(--mango) 0 25%,var(--coral) 0 50%,var(--mint) 0 75%,var(--sky) 0);border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ground-2);position:relative;animation:spin 18s linear infinite}
+.logo::after{content:"";position:absolute;inset:11px;border-radius:50%;background:var(--ground);border:3px solid var(--ink)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.brand h1{font-size:22px;font-weight:900;letter-spacing:-.01em;color:var(--paper)}
+.brand small{display:block;font-family:var(--f-body);font-size:12px;color:var(--on-ground-soft);font-weight:500;letter-spacing:.02em}
+.tracks{display:flex;flex-wrap:wrap;gap:8px;flex:1;min-width:0}
+.track{border:2px solid var(--ink);background:var(--ground-2);color:var(--on-ground);padding:7px 14px;border-radius:999px;font-weight:600;font-size:14px;box-shadow:3px 3px 0 var(--ink);transition:transform .12s}
+.track:hover{transform:translate(-1px,-1px)}
+.track[aria-pressed="true"]{background:var(--mango);color:var(--ink)}
+.track[data-t="ml"][aria-pressed="true"]{background:var(--mint)}
+.track[data-t="cpp"][aria-pressed="true"]{background:var(--sky)}
+.track[data-t="cs"][aria-pressed="true"]{background:var(--lilac)}
+.stats{display:flex;gap:8px;flex-wrap:wrap}
+.stat{background:var(--paper);color:var(--ink);border:2px solid var(--ink);border-radius:10px;padding:4px 10px;box-shadow:3px 3px 0 var(--ink);font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat b{font-family:var(--f-display);font-size:15px}
+
+/* grid */
+.grid{display:grid;grid-template-columns:260px minmax(0,1fr) 290px;gap:20px;align-items:start}
+@media (max-width:1060px){.grid{grid-template-columns:minmax(0,1fr) 280px}.left{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}}
+@media (max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}.stage{order:-1}}
+.left,.right{display:flex;flex-direction:column;gap:16px;min-width:0}
+.panel{background:var(--paper);color:var(--ink);border:2.5px solid var(--ink);border-radius:var(--r);box-shadow:var(--shadow);padding:16px;min-width:0}
+.panel h2{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+
+/* level card */
+.level{background:var(--mango)}
+.level .num{font-family:var(--f-display);font-weight:900;font-size:46px;line-height:1;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:8px}
+.tier{display:inline-block;background:var(--ink);color:var(--paper);font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;letter-spacing:.04em}
+.delta{font-family:var(--f-body);font-size:14px;font-weight:700;padding:1px 7px;border-radius:6px;border:2px solid var(--ink);opacity:0}
+.delta.show{animation:pop 1.8s ease-out}
+@keyframes pop{0%{opacity:0;transform:translateY(8px) scale(.8)}15%{opacity:1;transform:translateY(0) scale(1.15)}30%{transform:scale(1)}80%{opacity:1}100%{opacity:0}}
+.delta.up{background:var(--mint)}.delta.down{background:var(--coral);color:var(--paper)}
+.spark{width:100%;height:56px;display:block;margin-top:10px}
+.spark .area{fill:var(--ink);opacity:.12}.spark .line{fill:none;stroke:var(--ink);stroke-width:2.5;stroke-linejoin:round}
+.spark .dot{fill:var(--coral);stroke:var(--ink);stroke-width:2}
+.levelfoot{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-top:6px;font-variant-numeric:tabular-nums}
+
+/* mastery bars */
+.bars{display:flex;flex-direction:column;gap:9px}
+.bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;font-size:13px;font-weight:600;background:none;border:0;padding:0;text-align:left;color:var(--ink)}
+.bar span:last-child{font-variant-numeric:tabular-nums;color:var(--ink-soft)}
+.bar i{grid-column:1/-1;height:10px;border-radius:6px;background:var(--paper-2);border:2px solid var(--ink);overflow:hidden;display:block}
+.bar i b{display:block;height:100%;transition:width .5s}
+.bar:hover span:first-child{text-decoration:underline}
+.weak{color:var(--coral);font-size:11px;font-weight:700;margin-left:4px}
+
+.btn{border:2.5px solid var(--ink);background:var(--paper);color:var(--ink);font-weight:700;padding:9px 14px;border-radius:10px;box-shadow:3px 3px 0 var(--ink);transition:transform .1s,box-shadow .1s;display:inline-flex;align-items:center;gap:7px;font-size:14px}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn.primary{background:var(--coral);color:var(--paper)}
+.btn.go{background:var(--mint)}
+.btn.sky{background:var(--sky)}
+.btn.lilac{background:var(--lilac)}
+.btn.sm{padding:5px 10px;font-size:13px;border-width:2px;box-shadow:2px 2px 0 var(--ink)}
+.review{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.review .big{font-family:var(--f-display);font-size:28px;font-weight:900;font-variant-numeric:tabular-nums}
+
+/* stage */
+.stage{min-width:0;display:flex;flex-direction:column;gap:14px}
+.modes{display:flex;flex-wrap:wrap;gap:6px;background:var(--ground-2);border:2px solid var(--ink);border-radius:12px;padding:5px;align-self:flex-start;max-width:100%}
+.mode{border:0;background:transparent;color:var(--on-ground-soft);font-weight:700;padding:7px 13px;border-radius:8px;font-size:14px}
+.mode[aria-pressed="true"]{background:var(--paper);color:var(--ink)}
+.why{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--on-ground-soft)}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--ground-2);border:1.5px solid var(--ground-line);color:var(--on-ground);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600}
+.chip.hot{border-color:var(--coral);color:#FFC2C2}
+.chip.ai{border-color:var(--lilac);color:#E2D7FF}
+
+.card{background:var(--paper);color:var(--ink);border:3px solid var(--ink);border-radius:18px;box-shadow:7px 7px 0 var(--ink);padding:22px;position:relative;min-width:0}
+.card.enter{animation:slide .35s cubic-bezier(.2,.9,.3,1.3)}
+@keyframes slide{from{transform:translateY(14px) rotate(-.6deg);opacity:.2}to{transform:none;opacity:1}}
+.cardhead{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center;margin-bottom:12px}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:12px;font-weight:700;border:2px solid var(--ink);border-radius:6px;padding:1px 8px;background:var(--paper-2)}
+.type{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:var(--ink);color:var(--paper);padding:3px 9px;border-radius:6px}
+.diff{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.diff i{display:flex;gap:2px}.diff i b{width:7px;height:14px;border:1.5px solid var(--ink);border-radius:2px;background:transparent}
+.diff i b.on{background:var(--coral)}
+.qtitle{font-size:22px;font-weight:700;margin-bottom:8px;line-height:1.25}
+.qtext{font-size:17px;line-height:1.55;max-width:68ch;white-space:pre-wrap}
+.qtext code,.explain code{font-family:var(--f-mono);font-size:.9em;background:var(--paper-2);padding:1px 5px;border-radius:4px}
+.opts{display:grid;gap:10px;margin-top:18px}
+.opt{text-align:left;border:2.5px solid var(--ink);background:var(--paper);color:var(--ink);padding:12px 14px;border-radius:12px;font-weight:600;font-size:15px;display:flex;gap:12px;align-items:flex-start;box-shadow:3px 3px 0 var(--ink);transition:transform .1s,background .15s}
+.opt:hover:not(:disabled){transform:translate(-1px,-1px);background:var(--paper-2)}
+.opt .k{font-family:var(--f-display);font-size:13px;width:26px;height:26px;flex:none;border:2px solid var(--ink);border-radius:7px;display:grid;place-items:center;background:var(--paper-2)}
+.opt.right{background:var(--mint)}.opt.wrong{background:var(--coral);color:var(--paper)}
+.opt.right .k,.opt.wrong .k{background:var(--paper);color:var(--ink)}
+.opt:disabled{cursor:default}
+
+/* flashcard */
+.flip{perspective:1200px;margin-top:16px}
+.flipin{position:relative;min-height:190px;transition:transform .55s cubic-bezier(.3,.9,.3,1.1);transform-style:preserve-3d}
+.flip.on .flipin{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;border:2.5px dashed var(--ink);border-radius:14px;padding:20px;display:flex;flex-direction:column;justify-content:center;gap:8px;background:var(--paper-2);overflow:auto}
+.face.back{transform:rotateY(180deg);background:#DDF7EC;border-style:solid}
+.face p{margin:0;font-size:16px;white-space:pre-wrap}
+.grade{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+
+/* code */
+.editor{margin-top:16px;border:2.5px solid var(--ink);border-radius:12px;overflow:hidden;background:var(--ink)}
+.edbar{display:flex;justify-content:space-between;align-items:center;padding:6px 12px;color:var(--paper-2);font-family:var(--f-mono);font-size:12px;gap:8px;flex-wrap:wrap}
+.edbar span i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;background:var(--coral)}
+.edbar span i:nth-child(2){background:var(--mango)}.edbar span i:nth-child(3){background:var(--mint)}
+textarea#code{display:block;width:100%;min-height:220px;resize:vertical;border:0;background:#22325C;color:#F5E9D4;font-family:var(--f-mono);font-size:13.5px;line-height:1.6;padding:14px;tab-size:2;outline:none}
+.tests{margin-top:12px;display:grid;gap:6px;font-family:var(--f-mono);font-size:12.5px}
+.test{border:2px solid var(--ink);border-radius:8px;padding:6px 10px;background:var(--paper-2);overflow-x:auto;white-space:nowrap}
+.test.ok{background:#CFF5E5}.test.no{background:#FFD3D0}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;align-items:center}
+.spacer{flex:1}
+
+.feedback{margin-top:18px;border-top:2.5px dashed var(--ink);padding-top:14px}
+.verdict{font-family:var(--f-display);font-weight:900;font-size:20px;margin-bottom:6px}
+.verdict.good{color:#13885F}.verdict.bad{color:#D63B3B}
+.explain{font-size:15px;max-width:68ch;margin:0}
+pre.sol{background:var(--ink);color:#F5E9D4;font-family:var(--f-mono);font-size:12.5px;padding:12px;border-radius:10px;overflow-x:auto;margin:10px 0 0}
+
+.ai{margin-top:14px;background:#EDE5FF;border:2.5px solid var(--ink);border-radius:12px;padding:12px 14px;font-size:14.5px;white-space:pre-wrap;max-width:100%}
+.ai .lbl{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;color:#5B3FC4}
+.ai.err{background:#FFE5E0}
+
+/* twin bar */
+.twin{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--ground-2);border:2px solid var(--ink);border-radius:12px;padding:10px 12px}
+.twin strong{font-family:var(--f-display);font-size:13px;color:var(--lilac);margin-right:4px}
+.twin .note{font-size:12px;color:var(--on-ground-soft);flex-basis:100%}
+
+/* similar */
+.sim{display:flex;flex-direction:column;gap:8px}
+.simitem{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;text-align:left;border:2px solid var(--ink);background:var(--paper-2);color:var(--ink);padding:8px 10px;border-radius:10px;font-size:13.5px;font-weight:600;transition:transform .1s}
+.simitem:hover{transform:translateX(3px);background:var(--mango)}
+.simitem .ty{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:var(--ink);color:var(--paper);border-radius:5px;padding:2px 5px}
+.simitem .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.simitem .d{font-variant-numeric:tabular-nums;font-size:12px;color:var(--ink-soft)}
+.simitem .done{color:#13885F}
+.notes ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.notes h3{font-size:14px;margin:10px 0 6px;font-weight:700}
+.notes h3:first-of-type{margin-top:0}
+.goal{display:flex;gap:14px;align-items:center}
+.ring{width:64px;height:64px;flex:none}
+.ring circle{fill:none;stroke-width:8}
+.ring .bg{stroke:var(--paper-2)}.ring .fg{stroke:var(--coral);stroke-linecap:round;transition:stroke-dashoffset .6s}
+.goal p{margin:0;font-size:13.5px}
+.goal b{font-family:var(--f-display)}
+.empty{font-size:13.5px;color:var(--ink-soft);margin:0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(120px);background:var(--paper);color:var(--ink);border:2.5px solid var(--ink);box-shadow:var(--shadow);border-radius:12px;padding:10px 16px;font-weight:700;transition:transform .3s;z-index:20;max-width:calc(100vw - 32px)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Grindstone<small>adaptive practice that levels with you</small></h1></div>
+    <nav class="tracks" id="tracks" aria-label="Choose what to practice"></nav>
+    <div class="stats"><span class="stat">🔥 <b id="streak">0</b> day</span><span class="stat">⚡ <b id="xp">0</b> XP</span><span class="stat">✔ <b id="acc">0%</b></span></div>
+  </header>
+
+  <div class="grid">
+    <aside class="left">
+      <section class="panel level" aria-label="Your level">
+        <div class="eyebrow" id="lvlTrack">DSA level</div>
+        <div class="num"><span id="rating">1000</span><span class="delta" id="delta"></span></div>
+        <span class="tier" id="tier">Apprentice</span>
+        <svg class="spark" id="spark" viewBox="0 0 220 56" preserveAspectRatio="none" aria-label="Rating history"></svg>
+        <div class="levelfoot"><span id="sparkL">start</span><span id="sparkR">now</span></div>
+      </section>
+      <section class="panel">
+        <h2>Topic mastery <span class="eyebrow">tap to drill</span></h2>
+        <div class="bars" id="bars"></div>
+      </section>
+      <section class="panel">
+        <h2>Mistake review</h2>
+        <div class="review"><div><div class="big" id="dueN">0</div><div class="eyebrow">questions due</div></div>
+          <button class="btn sm" id="reviewBtn">Review now</button></div>
+      </section>
+    </aside>
+
+    <main class="stage">
+      <div class="modes" id="modes" role="group" aria-label="Question format"></div>
+      <div class="why" id="why"></div>
+      <article class="card" id="card"></article>
+      <div class="twin">
+        <strong>✦ Twin generator</strong>
+        <button class="btn sm lilac" data-twin="same">Same level</button>
+        <button class="btn sm" data-twin="easier">Easier</button>
+        <button class="btn sm primary" data-twin="harder">Harder</button>
+        <span class="note" id="twinNote">Claude writes a brand-new question on the same idea. Code twins are checked against their own tests before you see them.</span>
+      </div>
+    </main>
+
+    <aside class="right">
+      <section class="panel">
+        <h2>Today's goal</h2>
+        <div class="goal">
+          <svg class="ring" viewBox="0 0 64 64"><circle class="bg" cx="32" cy="32" r="26"/><circle class="fg" id="ringFg" cx="32" cy="32" r="26" stroke-dasharray="163.4" stroke-dashoffset="163.4" transform="rotate(-90 32 32)"/></svg>
+          <p><b id="goalXp">0</b> / 150 XP today<br><span id="goalMsg">Solve a few to warm up.</span></p>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Similar questions</h2>
+        <div class="sim" id="sim"></div>
+      </section>
+      <section class="panel notes">
+        <h2>Quick notes <button class="btn sm lilac" id="cheatBtn">AI cheat sheet</button></h2>
+        <div id="notes"></div>
+      </section>
+    </aside>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ---------- data ---------- */
+const TRACKS={dsa:"DSA & Coding",ml:"Machine Learning",cpp:"C++",cs:"CS Core"};
+const MODES=[["mix","Smart mix"],["mcq","MCQ"],["flash","Flashcards"],["code","Code"]];
+const T=(a,e)=>[a,e];
+const BANK=[
+// DSA code (JavaScript runner)
+{id:"d1",track:"dsa",type:"code",tags:["Hashing","Arrays"],diff:900,title:"Two Sum",q:"Given an array nums and a number target, return the indices [i, j] (i < j) of the two numbers that add up to target. Exactly one answer exists.",fn:"twoSum",starter:"function twoSum(nums, target) {\n  // return [i, j]\n}",tests:[T([[2,7,11,15],9],[0,1]),T([[3,2,4],6],[1,2]),T([[3,3],6],[0,1]),T([[-1,5,8,-4],4],[0,1])],solution:"function twoSum(nums, target) {\n  const seen = new Map();\n  for (let i = 0; i < nums.length; i++) {\n    const need = target - nums[i];\n    if (seen.has(need)) return [seen.get(need), i];\n    seen.set(nums[i], i);\n  }\n}",explain:"Keep a map from value to index. For each element, check whether target − value was already seen. One pass, O(n) time, O(n) space."},
+{id:"d2",track:"dsa",type:"code",tags:["Stack","Strings"],diff:1000,title:"Valid Parentheses",q:"Return true if the string s made of ()[]{} is balanced: every opener is closed by the same type, in the correct order.",fn:"isValid",starter:"function isValid(s) {\n  \n}",tests:[T(["()[]{}"],true),T(["(]"],false),T(["([{}])"],true),T(["(("],false),T([""],true)],solution:"function isValid(s) {\n  const st = [], pair = {')':'(', ']':'[', '}':'{'};\n  for (const c of s) {\n    if ('([{'.includes(c)) st.push(c);\n    else if (st.pop() !== pair[c]) return false;\n  }\n  return st.length === 0;\n}",explain:"Push openers on a stack. A closer must match the top of the stack. The string is valid only if the stack ends empty."},
+{id:"d3",track:"dsa",type:"code",tags:["DP","Arrays"],diff:1150,title:"Maximum Subarray",q:"Return the largest sum of any contiguous, non-empty subarray of nums.",fn:"maxSubArray",starter:"function maxSubArray(nums) {\n  \n}",tests:[T([[-2,1,-3,4,-1,2,1,-5,4]],6),T([[1]],1),T([[-3,-1,-2]],-1),T([[5,4,-1,7,8]],23)],solution:"function maxSubArray(nums) {\n  let best = nums[0], cur = nums[0];\n  for (let i = 1; i < nums.length; i++) {\n    cur = Math.max(nums[i], cur + nums[i]);\n    best = Math.max(best, cur);\n  }\n  return best;\n}",explain:"Kadane's algorithm: the best subarray ending at i either extends the one ending at i−1 or starts fresh at i."},
+{id:"d4",track:"dsa",type:"code",tags:["Sliding Window","Strings","Hashing"],diff:1300,title:"Longest Substring Without Repeats",q:"Return the length of the longest substring of s that has no repeating characters.",fn:"lengthOfLongestSubstring",starter:"function lengthOfLongestSubstring(s) {\n  \n}",tests:[T(["abcabcbb"],3),T(["bbbbb"],1),T(["pwwkew"],3),T([""],0),T(["dvdf"],3)],solution:"function lengthOfLongestSubstring(s) {\n  const last = new Map(); let lo = 0, best = 0;\n  for (let hi = 0; hi < s.length; hi++) {\n    if (last.has(s[hi]) && last.get(s[hi]) >= lo) lo = last.get(s[hi]) + 1;\n    last.set(s[hi], hi);\n    best = Math.max(best, hi - lo + 1);\n  }\n  return best;\n}",explain:"Slide a window [lo, hi]. When s[hi] was last seen inside the window, jump lo just past it. Track the widest window."},
+{id:"d5",track:"dsa",type:"code",tags:["Binary Search","Arrays"],diff:1100,title:"First Occurrence",q:"nums is sorted ascending. Return the index of the first occurrence of target, or -1 if it is absent. Aim for O(log n).",fn:"firstOccurrence",starter:"function firstOccurrence(nums, target) {\n  \n}",tests:[T([[1,2,2,2,3],2],1),T([[1,3,5],4],-1),T([[7,7,7],7],0),T([[],1],-1)],solution:"function firstOccurrence(nums, target) {\n  let lo = 0, hi = nums.length - 1, ans = -1;\n  while (lo <= hi) {\n    const mid = (lo + hi) >> 1;\n    if (nums[mid] >= target) { if (nums[mid] === target) ans = mid; hi = mid - 1; }\n    else lo = mid + 1;\n  }\n  return ans;\n}",explain:"On a match, record it and keep searching left. That turns ordinary binary search into a lower-bound search."},
+{id:"d6",track:"dsa",type:"code",tags:["Graphs","BFS/DFS"],diff:1400,title:"Number of Islands",q:"grid is an array of strings of '1' (land) and '0' (water). Count islands: groups of land connected up, down, left or right.",fn:"numIslands",starter:"function numIslands(grid) {\n  \n}",tests:[T([["11000","11000","00100","00011"]],3),T([["111","010","111"]],1),T([["000"]],0),T([["101","010","101"]],5)],solution:"function numIslands(grid) {\n  const g = grid.map(r => r.split('')); let n = 0;\n  const sink = (r, c) => {\n    if (r < 0 || c < 0 || r >= g.length || c >= g[0].length || g[r][c] !== '1') return;\n    g[r][c] = '0';\n    sink(r+1,c); sink(r-1,c); sink(r,c+1); sink(r,c-1);\n  };\n  for (let r = 0; r < g.length; r++)\n    for (let c = 0; c < g[0].length; c++)\n      if (g[r][c] === '1') { n++; sink(r, c); }\n  return n;\n}",explain:"Scan every cell. Each unvisited land cell starts a new island; flood-fill (DFS or BFS) sinks its whole component so it is not counted twice."},
+{id:"d7",track:"dsa",type:"code",tags:["DP"],diff:950,title:"Climbing Stairs",q:"You can climb 1 or 2 steps at a time. In how many distinct ways can you reach step n?",fn:"climbStairs",starter:"function climbStairs(n) {\n  \n}",tests:[T([2],2),T([3],3),T([5],8),T([10],89)],solution:"function climbStairs(n) {\n  let a = 1, b = 1;\n  for (let i = 2; i <= n; i++) [a, b] = [b, a + b];\n  return b;\n}",explain:"ways(n) = ways(n−1) + ways(n−2): the last move is either a 1-step or a 2-step. It is the Fibonacci sequence."},
+// DSA MCQ
+{id:"d10",track:"dsa",type:"mcq",tags:["Binary Search"],diff:800,q:"What is the time complexity of binary search on a sorted array of n elements?",options:["O(n)","O(log n)","O(n log n)","O(1)"],ans:1,explain:"Each step halves the search range, so it takes about log₂ n steps."},
+{id:"d11",track:"dsa",type:"mcq",tags:["Graphs","BFS/DFS"],diff:1000,q:"On an unweighted graph, BFS from a source finds…",options:["A minimum spanning tree","Shortest paths measured in number of edges","Every cycle in the graph","A topological order"],ans:1,explain:"BFS visits nodes layer by layer, so the first time it reaches a node is along a path with the fewest edges."},
+{id:"d12",track:"dsa",type:"mcq",tags:["DP"],diff:1100,q:"Which two properties make a problem a good fit for dynamic programming?",options:["Greedy choice and sorted input","Overlapping subproblems and optimal substructure","Divide and conquer with no shared subproblems","Constant space and linear time"],ans:1,explain:"DP pays off when the same subproblems recur (so caching helps) and the optimal answer is built from optimal sub-answers."},
+{id:"d13",track:"dsa",type:"mcq",tags:["Trees"],diff:900,q:"An inorder traversal of a binary search tree visits keys in…",options:["Level order","Random order","Ascending sorted order","Descending sorted order"],ans:2,explain:"Inorder is left, node, right. In a BST everything left is smaller and everything right is larger, so keys come out sorted."},
+{id:"d14",track:"dsa",type:"mcq",tags:["Hashing"],diff:1200,q:"Worst-case lookup time in a hash table that resolves collisions by chaining?",options:["O(1)","O(log n)","O(n)","O(n²)"],ans:2,explain:"If every key lands in the same bucket, the chain is a list of n items. Average case stays O(1) with a good hash and load factor."},
+{id:"d15",track:"dsa",type:"mcq",tags:["Graphs"],diff:1350,q:"Dijkstra's algorithm can give wrong answers when the graph has…",options:["Cycles","Negative edge weights","More than 10⁵ nodes","Undirected edges"],ans:1,explain:"Dijkstra finalizes a node once popped, assuming no later path can be cheaper. A negative edge breaks that. Use Bellman–Ford instead."},
+{id:"d16",track:"dsa",type:"mcq",tags:["Stack"],diff:1250,q:"A monotonic stack is the standard tool for…",options:["Next greater element for every index","Shortest path in a grid","Detecting a cycle in a linked list","Median of a stream"],ans:0,explain:"Keep a decreasing stack of indices; when a bigger value arrives, it is the next greater element for everything it pops. O(n) total."},
+{id:"d17",track:"dsa",type:"mcq",tags:["Sliding Window"],diff:1050,q:"Max sum of any k consecutive elements. Best approach?",options:["Try every subarray: O(n·k)","Sort, then take the top k","Fixed sliding window: add the new element, drop the old one","Binary search on the answer"],ans:2,explain:"Each slide changes the sum by +new −old, so the whole scan is O(n)."},
+// ML
+{id:"m1",track:"ml",type:"mcq",tags:["Overfitting"],diff:900,q:"Training accuracy 99%, validation accuracy 71%. The model most likely has…",options:["High bias","High variance (overfitting)","A learning rate that is too small","Too little capacity"],ans:1,explain:"A big train/validation gap means the model memorised training data. Add regularisation, more data, or simplify the model."},
+{id:"m2",track:"ml",type:"mcq",tags:["Regularization"],diff:1100,q:"Compared with L2, L1 regularisation tends to…",options:["Make all weights small but non-zero","Drive many weights to exactly zero","Speed up convergence only","Have no effect on linear models"],ans:1,explain:"The L1 penalty has corners at zero, so optimisation often lands weights exactly at 0. That gives sparse models and built-in feature selection."},
+{id:"m3",track:"ml",type:"mcq",tags:["Metrics"],diff:1150,q:"Fraud detection: 99.5% of transactions are legitimate. Which metric is least useful alone?",options:["Recall","Precision","PR-AUC","Accuracy"],ans:3,explain:"Predicting 'legit' for everything scores 99.5% accuracy and catches zero fraud. Use precision, recall, F1 or PR-AUC."},
+{id:"m4",track:"ml",type:"mcq",tags:["Optimization"],diff:950,q:"Training loss jumps around and sometimes explodes to NaN. The first thing to try?",options:["Lower the learning rate","Add more layers","Remove the validation set","Increase the batch to 1"],ans:0,explain:"Steps that are too large overshoot the minimum. A smaller learning rate, a warm-up, or gradient clipping usually fixes it."},
+{id:"m5",track:"ml",type:"mcq",tags:["Transformers"],diff:1450,q:"Why does scaled dot-product attention divide QKᵀ by √dₖ?",options:["To make the operation linear","To keep dot products from growing with dimension and saturating softmax","To normalise V","To add positional information"],ans:1,explain:"Dot products of random d-dimensional vectors have variance ~d. Large logits push softmax into near one-hot regions with tiny gradients."},
+{id:"m6",track:"ml",type:"mcq",tags:["Ensembles"],diff:1250,q:"A random forest mainly improves on a single decision tree by…",options:["Reducing bias via boosting","Reducing variance via bagging and random feature subsets","Using gradient descent","Pruning every tree to depth 1"],ans:1,explain:"Averaging many decorrelated, high-variance trees cancels out much of their individual noise."},
+{id:"m7",track:"ml",type:"mcq",tags:["Clustering"],diff:1300,q:"k-means works best when clusters are…",options:["Elongated and of very different sizes","Roughly spherical and similar in size","Nested inside each other","Defined by density, with noise points"],ans:1,explain:"k-means minimises squared Euclidean distance to centroids, which favours compact, round, similar-sized groups. For odd shapes try DBSCAN or GMMs."},
+{id:"m8",track:"ml",type:"mcq",tags:["Metrics"],diff:850,q:"Precision is…",options:["TP / (TP + FN)","TP / (TP + FP)","(TP + TN) / total","TN / (TN + FP)"],ans:1,explain:"Of everything predicted positive, how much was actually positive. TP/(TP+FN) is recall."},
+{id:"m9",track:"ml",type:"mcq",tags:["Data"],diff:1200,q:"You scale features using the mean and std of the whole dataset, then split into train and test. What went wrong?",options:["Nothing","Data leakage: test statistics influenced training","Underfitting","Class imbalance"],ans:1,explain:"Fit the scaler on training data only, then apply it to test. Otherwise test information leaks into training and scores look too good."},
+{id:"m20",track:"ml",type:"flash",tags:["Overfitting"],diff:1000,q:"Explain the bias–variance trade-off.",a:"Bias: error from overly simple assumptions (underfits).\nVariance: error from sensitivity to the particular training set (overfits).\nMore model capacity usually lowers bias but raises variance; aim for the lowest total error."},
+{id:"m21",track:"ml",type:"flash",tags:["Metrics","Data"],diff:950,q:"What is k-fold cross-validation and why use it?",a:"Split data into k folds; train on k−1 and validate on the remaining one, rotating k times; average the scores.\nGives a more stable estimate than one split and uses all data for both training and validation."},
+{id:"m22",track:"ml",type:"flash",tags:["Neural Nets"],diff:1050,q:"Sigmoid vs softmax in the output layer?",a:"Sigmoid: one independent probability per output, for binary or multi-label tasks.\nSoftmax: probabilities across classes that sum to 1, for single-label multi-class tasks."},
+{id:"m23",track:"ml",type:"flash",tags:["Optimization"],diff:1200,q:"What do momentum and Adam add to plain SGD?",a:"Momentum keeps a running average of gradients, smoothing noisy steps and speeding through ravines.\nAdam adds per-parameter step sizes from a running average of squared gradients, plus bias correction."},
+// C++
+{id:"c1",track:"cpp",type:"flash",tags:["Pointers"],diff:900,q:"Pointer vs reference in C++?",a:"A pointer holds an address, can be null, can be reseated, and uses * / -> to access.\nA reference is an alias: it must be bound at creation, can't be null in valid code, and can't be reseated."},
+{id:"c2",track:"cpp",type:"flash",tags:["Memory"],diff:1150,q:"What is RAII?",a:"Resource Acquisition Is Initialization: tie a resource (memory, file, lock) to an object's lifetime. The constructor acquires it and the destructor releases it, so cleanup happens even when exceptions are thrown.\nExamples: std::vector, std::unique_ptr, std::lock_guard."},
+{id:"c3",track:"cpp",type:"flash",tags:["OOP"],diff:1200,q:"How do virtual functions work under the hood?",a:"Each polymorphic class has a vtable of function pointers; each object stores a hidden vptr to its class's vtable.\nA virtual call loads the vptr, indexes the table and calls through it: runtime dispatch."},
+{id:"c4",track:"cpp",type:"flash",tags:["Modern C++"],diff:1350,q:"What does std::move actually do?",a:"Nothing at runtime. It is a cast to an rvalue reference (T&&), which lets overload resolution pick the move constructor or move assignment.\nThe moved-from object stays valid but in an unspecified state."},
+{id:"c5",track:"cpp",type:"flash",tags:["STL"],diff:1000,q:"Why is vector::push_back amortised O(1)?",a:"When capacity runs out, the vector reallocates to a multiple (often 2×) of its size and copies or moves elements.\nThose rare O(n) copies spread over many cheap pushes average out to O(1) each."},
+{id:"c6",track:"cpp",type:"flash",tags:["Memory","Modern C++"],diff:1250,q:"unique_ptr vs shared_ptr?",a:"unique_ptr: sole ownership, move-only, zero overhead.\nshared_ptr: shared ownership via an atomic reference count; the object dies when the last owner goes. Use weak_ptr to break cycles."},
+{id:"c7",track:"cpp",type:"flash",tags:["OOP"],diff:1050,q:"What does a const member function promise?",a:"int size() const; means the function won't modify the object's observable state (members are treated as const inside).\nOnly const member functions can be called on const objects or through const references."},
+{id:"c8",track:"cpp",type:"flash",tags:["STL"],diff:1100,q:"std::map vs std::unordered_map?",a:"map: red-black tree, keys kept sorted, O(log n) operations.\nunordered_map: hash table, no order, O(1) average and O(n) worst case. Needs a hash for the key type."},
+{id:"c10",track:"cpp",type:"mcq",tags:["Pointers"],diff:850,q:"What does this print?\n\nint a = 5;\nint &r = a;\nr++;\ncout << a;",options:["5","6","Compile error","Undefined behaviour"],ans:1,explain:"r is another name for a, so r++ increments a itself."},
+{id:"c11",track:"cpp",type:"mcq",tags:["Memory"],diff:1300,q:"The Rule of Three says that if you define one of these, you probably need all three:",options:["Constructor, destructor, operator==","Destructor, copy constructor, copy assignment","Move constructor, move assignment, swap","new, delete, malloc"],ans:1,explain:"A custom destructor usually means the class owns a resource, so copying must be handled too. With moves, it becomes the Rule of Five."},
+{id:"c12",track:"cpp",type:"mcq",tags:["OOP","Memory"],diff:1400,q:"delete basePtr; where basePtr points to a Derived object and Base has no virtual destructor. Result?",options:["Derived's destructor runs, then Base's","Only Base's destructor runs, safely","Undefined behaviour","Compile error"],ans:2,explain:"Deleting through a base pointer without a virtual destructor is undefined behaviour. Give polymorphic bases a virtual destructor."},
+{id:"c13",track:"cpp",type:"mcq",tags:["STL"],diff:1150,q:"Which container gives O(1) average insert and lookup by key?",options:["std::map","std::set","std::unordered_map","std::list"],ans:2,explain:"unordered_map is a hash table. map and set are balanced trees with O(log n)."},
+// CS core
+{id:"s1",track:"cs",type:"mcq",tags:["OS"],diff:1150,q:"Which is NOT one of the four Coffman conditions for deadlock?",options:["Mutual exclusion","Hold and wait","Preemption","Circular wait"],ans:2,explain:"The condition is no preemption. Allowing resources to be preempted is one way to prevent deadlock."},
+{id:"s2",track:"cs",type:"mcq",tags:["DBMS"],diff:1200,q:"Moving from 2NF to 3NF removes…",options:["Repeating groups","Partial dependencies","Transitive dependencies","Multivalued dependencies"],ans:2,explain:"3NF: no non-key attribute depends on another non-key attribute (A → B → C)."},
+{id:"s3",track:"cs",type:"mcq",tags:["Networks"],diff:850,q:"The TCP three-way handshake, in order:",options:["SYN, ACK, FIN","SYN, SYN-ACK, ACK","ACK, SYN, SYN-ACK","HELLO, KEY, DONE"],ans:1,explain:"Client sends SYN, server replies SYN-ACK, client confirms with ACK. Both sides have now agreed on sequence numbers."},
+{id:"s4",track:"cs",type:"mcq",tags:["System Design"],diff:1300,q:"Cache-aside pattern, read miss. What happens?",options:["The cache fetches from the DB by itself","The app reads the DB, then writes the value into the cache","The request fails","The DB pushes all rows to the cache"],ans:1,explain:"In cache-aside the application owns the cache: on a miss it loads from the source and populates the cache for next time."},
+{id:"s5",track:"cs",type:"mcq",tags:["DBMS"],diff:800,q:"In ACID, the 'I' stands for…",options:["Integrity","Isolation","Indexing","Immutability"],ans:1,explain:"Isolation: concurrent transactions behave as if they ran one after another."},
+{id:"s6",track:"cs",type:"mcq",tags:["OS"],diff:1100,q:"Thrashing happens when…",options:["The CPU overheats","Processes spend more time paging than executing","Too many threads share one lock","The disk is full"],ans:1,explain:"When working sets don't fit in RAM, page faults dominate and useful work collapses."},
+{id:"s7",track:"cs",type:"mcq",tags:["Networks"],diff:1000,q:"You type example.com in a browser. What happens first on the network?",options:["TLS handshake","HTTP GET","DNS resolution of the hostname","TCP FIN"],ans:2,explain:"The browser needs an IP address before it can open a TCP connection. Then TCP, then TLS, then HTTP."},
+{id:"s8",track:"cs",type:"mcq",tags:["System Design"],diff:1450,q:"Main benefit of consistent hashing in a distributed cache?",options:["Encrypts keys","Only about 1/n of keys move when a node joins or leaves","Guarantees strong consistency","Removes the need for replication"],ans:1,explain:"With mod-n hashing almost every key remaps when n changes. A hash ring moves only the keys next to the changed node."},
+{id:"s20",track:"cs",type:"flash",tags:["OS"],diff:900,q:"Process vs thread?",a:"A process has its own address space and resources; isolated, heavier to create and switch.\nThreads share their process's memory and files; cheap to switch, but shared state needs synchronisation."},
+{id:"s21",track:"cs",type:"flash",tags:["DBMS"],diff:1150,q:"Why do databases use B+ trees for indexes?",a:"High fan-out keeps the tree shallow (few disk reads); all data sits in leaves linked in order, so range scans are fast; and the tree stays balanced on inserts and deletes."},
+{id:"s22",track:"cs",type:"flash",tags:["System Design"],diff:1300,q:"State the CAP theorem.",a:"During a network partition, a distributed system must choose between Consistency (every read sees the latest write) and Availability (every request gets a response).\nWithout a partition you can have both."}
+];
+const NOTES={
+"Arrays":["Prefix sums turn range-sum queries into O(1).","Sort first when order doesn't matter: unlocks two pointers and binary search.","Watch for in-place tricks: swap, reverse, mark with negatives."],
+"Hashing":["Map value → index/count for O(1) average lookup.","'Have I seen the complement?' solves pair problems in one pass.","Worst case O(n) when keys collide."],
+"Stack":["LIFO: matching brackets, undo, DFS.","Monotonic stack gives next greater/smaller element in O(n).","Push indices, not values, when you need positions."],
+"Strings":["Use a frequency array of 26 for lowercase letters.","Joining arrays beats repeated string concatenation in loops."],
+"DP":["Define state, transition, base case, answer.","Top-down memo is easier to write; bottom-up saves stack and often space.","1D rolling variables when only the last few states matter."],
+"Sliding Window":["Expand hi each step; shrink lo while the window is invalid.","Fixed size k: add new, drop old.","Track window state with a map or counts."],
+"Binary Search":["Search the answer space, not just arrays.","lo <= hi with mid = (lo+hi)>>1; decide which half keeps the answer.","Lower bound: on a match, keep going left."],
+"Graphs":["BFS for unweighted shortest path; Dijkstra for non-negative weights.","Mark visited before pushing to avoid duplicates.","Grid = graph with 4 neighbours."],
+"BFS/DFS":["BFS uses a queue and explores by layers.","DFS uses recursion or a stack and goes deep first.","Both are O(V + E)."],
+"Trees":["Most tree problems: recurse on left and right, combine.","BST inorder = sorted.","Height-balanced keeps operations O(log n)."],
+"Overfitting":["Gap between train and validation scores is the signal.","Fixes: more data, regularisation, dropout, early stopping, simpler model."],
+"Regularization":["L2 shrinks weights smoothly; L1 zeroes some out.","Tune strength (λ) on validation data."],
+"Metrics":["Precision = TP/(TP+FP); recall = TP/(TP+FN).","Imbalanced data: prefer F1 or PR-AUC over accuracy.","Pick the threshold for the business cost of FP vs FN."],
+"Optimization":["Learning rate is the first knob to tune.","Adam is a strong default; SGD with momentum often generalises well.","Clip gradients for RNNs and transformers."],
+"Transformers":["Attention = softmax(QKᵀ/√dₖ)·V.","Multi-head lets the model attend to different relations at once.","Positional encodings supply order information."],
+"Ensembles":["Bagging lowers variance (random forest).","Boosting lowers bias by fitting residuals (XGBoost, LightGBM)."],
+"Clustering":["k-means needs k; use the elbow or silhouette score to choose it.","Scale features first: distance-based."],
+"Data":["Split before any fitting, including scalers and encoders.","Check for duplicates across train and test."],
+"Neural Nets":["ReLU is the default hidden activation.","Output layer: sigmoid for binary or multi-label, softmax for multi-class."],
+"Pointers":["& takes an address, * dereferences.","Prefer references for non-null parameters.","Never return a pointer or reference to a local."],
+"Memory":["Prefer RAII and smart pointers to raw new/delete.","Rule of 0/3/5: own resources in one place."],
+"OOP":["virtual enables runtime dispatch; override catches mistakes.","Polymorphic base classes need a virtual destructor."],
+"Modern C++":["auto, range-for, lambdas, move semantics.","std::move only casts; the move constructor does the work."],
+"STL":["vector by default; unordered_map for O(1) lookups.","Learn the complexity of each container's operations."],
+"OS":["Deadlock needs all four Coffman conditions.","Scheduling: FCFS, SJF, round robin, priority.","Virtual memory: paging, page faults, TLB."],
+"DBMS":["Normal forms: 1NF atomic, 2NF no partial, 3NF no transitive dependencies.","ACID; isolation levels trade safety for speed.","Indexes speed reads, slow writes."],
+"Networks":["OSI 7 layers vs TCP/IP 4.","TCP reliable and ordered; UDP fast, no guarantees.","DNS → TCP → TLS → HTTP."],
+"System Design":["Start with requirements and scale estimates.","Cache, shard, replicate, queue.","CAP: under partition, pick C or A."]
+};
+const TIERS=[[900,"Rookie"],[1100,"Apprentice"],[1300,"Practitioner"],[1500,"Specialist"],[1700,"Expert"],[9999,"Master"]];
+
+/* ---------- state ---------- */
+const KEY="grindstone.v1";
+const fresh=()=>({track:"dsa",mode:"mix",ratings:{dsa:1000,ml:1000,cpp:1000,cs:1000},hist:{dsa:[1000],ml:[1000],cpp:[1000],cs:[1000]},mastery:{},seen:{},review:{},answered:0,correct:0,xp:0,dayXp:0,day:"",streak:0,lastActive:"",gen:[],recent:[]});
+let S=fresh();
+try{const raw=localStorage.getItem(KEY);if(raw)S=Object.assign(fresh(),JSON.parse(raw))}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const today=()=>new Date().toISOString().slice(0,10);
+if(S.day!==today()){S.day=today();S.dayXp=0}
+
+let cur=null,curReason=[],answered=false,attempts=0;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const all=()=>BANK.concat(S.gen);
+const byId=id=>all().find(q=>q.id===id);
+const tierOf=r=>TIERS.find(t=>r<t[0])[1];
+const mast=t=>S.mastery[t]??0.5;
+
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove("show"),2600)}
+
+/* ---------- adaptive picker ---------- */
+function pool(){
+  return all().filter(q=>q.track===S.track&&(S.mode==="mix"||q.type===S.mode));
+}
+function pick(opts={}){
+  let p=pool();
+  if(!p.length){toast("No "+S.mode+" questions in this track yet. Switched to Smart mix.");S.mode="mix";renderModes();p=pool()}
+  const r=S.ratings[S.track];
+  if(opts.tag) p=p.filter(q=>q.tags.includes(opts.tag));
+  if(opts.reviewOnly){const due=p.filter(q=>S.review[q.id]!==undefined&&S.review[q.id]<=S.answered);if(due.length)p=due}
+  const recent=new Set(S.recent.slice(-5));
+  let best=null,bestScore=-1e9,bestWhy=[];
+  for(const q of p){
+    if(cur&&q.id===cur.id&&p.length>1)continue;
+    const why=[];let sc=0;
+    const gap=Math.abs(q.diff-(r+40));sc-=gap/8;
+    if(gap<120)why.push(["Matches your level ("+q.diff+" vs "+Math.round(r)+")",""]);
+    const weakest=Math.min(...q.tags.map(mast));
+    sc+=(0.6-weakest)*60;
+    if(weakest<0.45)why.push(["Weak spot: "+q.tags.find(t=>mast(t)===weakest),"hot"]);
+    const due=S.review[q.id]!==undefined&&S.review[q.id]<=S.answered;
+    if(due){sc+=45;why.push(["Mistake due for review","hot"])}
+    const seen=S.seen[q.id];
+    if(!seen){sc+=12;why.push(["New to you",""])}else if(seen.ok&&!due)sc-=40;
+    if(recent.has(q.id))sc-=80;
+    if(q.ai)why.push(["AI-generated twin","ai"]);
+    sc+=Math.random()*10;
+    if(sc>bestScore){bestScore=sc;best=q;bestWhy=why}
+  }
+  return {q:best,why:bestWhy.length?bestWhy:[["Keeps your practice varied",""]]};
+}
+function load(q,why){
+  cur=q;curReason=why||[];answered=false;attempts=0;
+  S.recent.push(q.id);S.recent=S.recent.slice(-12);
+  renderCard();renderSimilar();renderNotes();save();
+}
+function next(opts){const {q,why}=pick(opts);if(q)load(q,why)}
+
+/* ---------- scoring ---------- */
+function grade(score){
+  if(answered)return;answered=true;
+  const t=cur.track,r=S.ratings[t];
+  const exp=1/(1+Math.pow(10,(cur.diff-r)/400));
+  const d=Math.round(32*(score-exp));
+  S.ratings[t]=Math.max(400,r+d);
+  S.hist[t].push(S.ratings[t]);S.hist[t]=S.hist[t].slice(-40);
+  for(const tag of cur.tags)S.mastery[tag]=+(mast(tag)*0.7+score*0.3).toFixed(3);
+  const s=S.seen[cur.id]||{n:0,ok:false};s.n++;s.ok=score>=0.6;S.seen[cur.id]=s;
+  S.answered++;if(score>=0.6)S.correct++;
+  if(score<0.6)S.review[cur.id]=S.answered+3;else delete S.review[cur.id];
+  const gain=Math.round((8+cur.diff/100)*Math.max(score,0.15));
+  S.xp+=gain;S.dayXp+=gain;
+  if(S.lastActive!==today()){const y=new Date(Date.now()-864e5).toISOString().slice(0,10);S.streak=S.lastActive===y?S.streak+1:1;S.lastActive=today()}
+  save();renderSide();
+  const el=$("#delta");el.textContent=(d>=0?"+":"")+d;el.className="delta "+(d>=0?"up":"down");void el.offsetWidth;el.classList.add("show");
+  return {d,gain};
+}
+
+/* ---------- render: chrome ---------- */
+function renderTracks(){
+  $("#tracks").innerHTML=Object.entries(TRACKS).map(([k,v])=>`<button class="track" data-t="${k}" aria-pressed="${S.track===k}">${v}</button>`).join("");
+}
+function renderModes(){
+  $("#modes").innerHTML=MODES.map(([k,v])=>`<button class="mode" data-m="${k}" aria-pressed="${S.mode===k}">${v}</button>`).join("");
+}
+function renderSide(){
+  const t=S.track,r=Math.round(S.ratings[t]);
+  $("#lvlTrack").textContent=TRACKS[t]+" level";
+  $("#rating").textContent=r;$("#tier").textContent=tierOf(r);
+  $("#streak").textContent=S.streak;$("#xp").textContent=S.xp;
+  $("#acc").textContent=S.answered?Math.round(100*S.correct/S.answered)+"%":"–";
+  // sparkline
+  const h=S.hist[t].length>1?S.hist[t]:[S.hist[t][0],S.hist[t][0]];
+  const lo=Math.min(...h)-20,hi=Math.max(...h)+20,W=220,H=56,pad=6;
+  const pts=h.map((v,i)=>[pad+i*(W-2*pad)/(h.length-1),H-pad-(v-lo)/(hi-lo)*(H-2*pad)]);
+  const line=pts.map(p=>p.map(n=>n.toFixed(1)).join(",")).join(" ");
+  const last=pts[pts.length-1];
+  $("#spark").innerHTML=`<polygon class="area" points="${pad},${H} ${line} ${W-pad},${H}"/><polyline class="line" points="${line}"/><circle class="dot" cx="${last[0]}" cy="${last[1]}" r="4.5"/>`;
+  $("#sparkL").textContent=Math.round(h[0]);$("#sparkR").textContent=r+" now · "+(S.hist[t].length-1)+" solved";
+  // mastery bars
+  const tags=[...new Set(all().filter(q=>q.track===t).flatMap(q=>q.tags))];
+  tags.sort((a,b)=>mast(a)-mast(b));
+  $("#bars").innerHTML=tags.map(tag=>{const m=Math.round(mast(tag)*100);const c=m<45?"var(--coral)":m<70?"var(--mango)":"var(--mint)";
+    return `<button class="bar" data-tag="${esc(tag)}"><span>${esc(tag)}${m<45?'<span class="weak">weak</span>':""}</span><span>${m}%</span><i><b style="width:${m}%;background:${c}"></b></i></button>`}).join("");
+  const due=Object.entries(S.review).filter(([id,a])=>a<=S.answered&&byId(id)&&byId(id).track===t).length;
+  const pending=Object.keys(S.review).filter(id=>byId(id)&&byId(id).track===t).length;
+  $("#dueN").textContent=due;
+  $("#reviewBtn").disabled=!pending;
+  $("#reviewBtn").textContent=due?"Review now":pending?pending+" queued":"All clear";
+  // goal
+  const g=Math.min(1,S.dayXp/150);$("#goalXp").textContent=S.dayXp;
+  $("#ringFg").style.strokeDashoffset=(163.4*(1-g)).toFixed(1);
+  $("#goalMsg").textContent=g>=1?"Goal hit. Anything more is bonus.":g>0.5?"Over halfway there.":S.dayXp?"Good start, keep going.":"Solve a few to warm up.";
+}
+
+/* ---------- render: card ---------- */
+function diffBars(d){const n=Math.max(1,Math.min(5,Math.round((d-700)/180)));return `<span class="diff"><i>${[1,2,3,4,5].map(i=>`<b class="${i<=n?"on":""}"></b>`).join("")}</i>${d}</span>`}
+function renderCard(){
+  const q=cur,card=$("#card");
+  $("#why").innerHTML='<span>Picked because</span>'+curReason.map(([t,c])=>`<span class="chip ${c}">${esc(t)}</span>`).join("");
+  const typeName={mcq:"Multiple choice",flash:"Flashcard",code:"Code · JavaScript"}[q.type];
+  let body=`<div class="cardhead"><div class="tags"><span class="type">${typeName}</span>${q.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}${q.ai?'<span class="tag" style="background:var(--lilac)">✦ AI twin</span>':""}</div>${diffBars(q.diff)}</div>`;
+  if(q.title)body+=`<h2 class="qtitle">${esc(q.title)}</h2>`;
+  if(q.type==="mcq"){
+    body+=`<p class="qtext">${esc(q.q)}</p><div class="opts">${q.options.map((o,i)=>`<button class="opt" data-i="${i}"><span class="k">${"ABCD"[i]}</span><span>${esc(o)}</span></button>`).join("")}</div>`;
+  }else if(q.type==="flash"){
+    body+=`<div class="flip" id="flip"><div class="flipin"><div class="face"><span class="eyebrow">Prompt</span><p style="font-size:19px;font-weight:600">${esc(q.q)}</p><span class="eyebrow">Answer it out loud, then flip</span></div><div class="face back"><span class="eyebrow">Answer</span><p>${esc(q.a)}</p></div></div></div>
+    <div class="grade" id="gradeRow"><button class="btn sky" id="flipBtn">Flip card</button></div>`;
+  }else{
+    body+=`<p class="qtext">${esc(q.q)}</p><div class="editor"><div class="edbar"><span><i></i><i></i><i></i></span><span>${esc(q.fn)}.js · ${q.tests.length} tests</span></div><textarea id="code" spellcheck="false" aria-label="Your solution">${esc(q.starter)}</textarea></div><div class="tests" id="tests"></div>`;
+  }
+  const codeBtns=q.type==="code"?`<button class="btn go" id="runBtn">▶ Run tests</button><button class="btn sm" id="solBtn">Show solution</button><button class="btn sm lilac" id="reviewAi">AI code review</button>`:"";
+  body+=`<div class="actions">${codeBtns}<button class="btn sm lilac" id="hintBtn">AI hint</button><span class="spacer"></span><button class="btn sm" id="skipBtn">Skip</button><button class="btn primary" id="nextBtn" hidden>Next question →</button></div><div id="fb"></div><div id="aiOut"></div>`;
+  card.innerHTML=body;card.classList.remove("enter");void card.offsetWidth;card.classList.add("enter");
+  if(q.type==="code")$("#code").addEventListener("keydown",e=>{if(e.key==="Tab"){e.preventDefault();const t=e.target,s=t.selectionStart;t.value=t.value.slice(0,s)+"  "+t.value.slice(t.selectionEnd);t.selectionStart=t.selectionEnd=s+2}});
+}
+function showFeedback(ok,html){
+  const res=grade(ok);
+  const label=ok>=0.6?["good",["Nailed it.","Correct.","Clean.","That's it."][Math.floor(Math.random()*4)]]:["bad","Not this time."];
+  $("#fb").innerHTML=`<div class="feedback"><div class="verdict ${label[0]}">${label[1]} <span style="font-size:14px;font-family:var(--f-body)">${res?`rating ${res.d>=0?"+":""}${res.d} · +${res.gain} XP`:""}</span></div>${html}</div>`;
+  $("#nextBtn").hidden=false;$("#skipBtn").hidden=true;$("#nextBtn").focus();
+  renderSimilar();
+}
+function explainHTML(q){return `<p class="explain">${esc(q.explain||"")}</p>`}
+
+/* ---------- code runner (Web Worker, 2s timeout) ---------- */
+const WORKER_SRC=`onmessage=e=>{const {code,fn,tests}=e.data;let f;try{f=new Function(code+"\\n;return "+fn+";")()}catch(err){postMessage({error:"Syntax error: "+err.message});return}
+if(typeof f!=="function"){postMessage({error:"Define a function named "+fn});return}
+const res=tests.map(([args,exp])=>{try{const out=f(...JSON.parse(JSON.stringify(args)));const o=JSON.stringify(out===undefined?null:out);return {ok:o===JSON.stringify(exp),out:o,exp:JSON.stringify(exp),args:JSON.stringify(args).slice(1,-1)}}catch(err){return {ok:false,out:"Error: "+err.message,exp:JSON.stringify(exp),args:JSON.stringify(args).slice(1,-1)}}});postMessage({res})}`;
+const workerURL=URL.createObjectURL(new Blob([WORKER_SRC],{type:"text/javascript"}));
+function runCode(code,fn,tests){
+  return new Promise(resolve=>{
+    let w;try{w=new Worker(workerURL)}catch(e){resolve({error:"Your browser blocked the code runner."});return}
+    const timer=setTimeout(()=>{w.terminate();resolve({error:"Timed out after 2 s. Check for an infinite loop."})},2000);
+    w.onmessage=e=>{clearTimeout(timer);w.terminate();resolve(e.data)};
+    w.onerror=e=>{clearTimeout(timer);w.terminate();resolve({error:e.message||"Runtime error"})};
+    w.postMessage({code,fn,tests});
+  });
+}
+async function onRun(){
+  const btn=$("#runBtn");btn.disabled=true;btn.textContent="Running…";
+  const r=await runCode($("#code").value,cur.fn,cur.tests);
+  btn.disabled=false;btn.textContent="▶ Run tests";
+  const box=$("#tests");
+  if(r.error){box.innerHTML=`<div class="test no">${esc(r.error)}</div>`;attempts++;return}
+  box.innerHTML=r.res.map((t,i)=>`<div class="test ${t.ok?"ok":"no"}">${t.ok?"✓":"✗"} test ${i+1}: ${esc(cur.fn)}(${esc(t.args)}) → ${esc(t.out)}${t.ok?"":"  expected "+esc(t.exp)}</div>`).join("");
+  attempts++;
+  if(!answered&&r.res.every(t=>t.ok)){
+    const sc=attempts===1?1:attempts<=3?0.75:0.6;
+    showFeedback(sc,explainHTML(cur)+`<pre class="sol">${esc(cur.solution)}</pre><p class="explain" style="margin-top:8px;font-size:13px">Reference solution shown for comparison.</p>`);
+  }
+}
+
+/* ---------- similar + notes ---------- */
+function similar(q,n=5){
+  return all().filter(x=>x.id!==q.id&&x.track===q.track).map(x=>{
+    const ov=x.tags.filter(t=>q.tags.includes(t)).length;
+    return {x,s:ov*100-Math.abs(x.diff-q.diff)/5+(x.type===q.type?15:0)};
+  }).filter(o=>o.s>0).sort((a,b)=>b.s-a.s).slice(0,n).map(o=>o.x);
+}
+function label(q){return q.title||q.q.split("\n")[0]}
+function renderSimilar(){
+  const list=similar(cur);
+  $("#sim").innerHTML=list.length?list.map(x=>{const st=S.seen[x.id];return `<button class="simitem" data-id="${x.id}"><span class="ty">${x.type}</span><span class="t">${esc(label(x))}</span><span class="d">${st&&st.ok?'<span class="done">✓</span>':x.diff}</span></button>`}).join(""):'<p class="empty">No close matches yet. Use the twin generator to make one.</p>';
+}
+function renderNotes(){
+  $("#notes").innerHTML=cur.tags.filter(t=>NOTES[t]).map(t=>`<h3>${esc(t)}</h3><ul>${NOTES[t].map(n=>`<li>${esc(n)}</li>`).join("")}</ul>`).join("")||'<p class="empty">No notes for this topic yet. Try the AI cheat sheet.</p>';
+}
+
+/* ---------- Claude (sample capability) ---------- */
+let samplePromise=null;
+function getSample(){if(!samplePromise)samplePromise=(window.claude&&window.claude.use?window.claude.use("sample"):Promise.resolve(null)).catch(()=>null);return samplePromise}
+const ERR={not_granted:"Claude access was declined for this page, so AI features are off.",sampling_disabled:"Claude isn't available on this account.",rate_limited:"Too many AI requests. Wait a minute and try again.",invalid_json:"Claude's reply didn't come back in the right shape. Try again.",refused:"Claude declined that one. Try a different question."};
+const errMsg=e=>ERR[e&&e.code]||"Couldn't reach Claude. Try again in a moment.";
+function aiBox(lbl){const o=$("#aiOut");o.innerHTML=`<div class="ai"><span class="lbl">${esc(lbl)}</span><span id="aiText">Thinking…</span></div>`;return $("#aiText")}
+function qContext(q){
+  if(q.type==="mcq")return `Multiple-choice question: ${q.q}\nOptions: ${q.options.map((o,i)=>"ABCD"[i]+") "+o).join(" | ")}`;
+  if(q.type==="flash")return `Flashcard prompt: ${q.q}`;
+  return `Coding problem "${q.title}": ${q.q}\nFunction signature: ${q.starter.split("\n")[0]}`;
+}
+async function onHint(){
+  const s=await getSample();if(!s){toast("AI hints need Claude access, available when this page is opened in Claude.");return}
+  const out=aiBox("Hint");const b=$("#hintBtn");b.disabled=true;
+  try{await s(`You are a patient tutor for a CS student. Give ONE short hint (2-3 sentences, plain text, no markdown) that nudges toward the answer without revealing it or the correct option letter.\n\n${qContext(cur)}`,{modelTier:"quick",onText:({text})=>{out.textContent=text}})}
+  catch(e){out.textContent=e.text||"";out.parentElement.classList.add("err");out.textContent+=(e.text?"\n":"")+errMsg(e)}
+  finally{b.disabled=false}
+}
+async function onReview(){
+  const s=await getSample();if(!s){toast("AI review needs Claude access, available when this page is opened in Claude.");return}
+  const out=aiBox("Code review");const b=$("#reviewAi");b.disabled=true;
+  try{await s(`Review this student's JavaScript solution. In under 120 words, plain text: say whether the approach is correct, its time and space complexity, and one concrete improvement. Don't paste a full solution.\n\nProblem: ${cur.q}\n\nCode:\n${$("#code").value.slice(0,4000)}`,{onText:({text})=>{out.textContent=text}})}
+  catch(e){out.textContent=(e.text?e.text+"\n":"")+errMsg(e);out.parentElement.classList.add("err")}
+  finally{b.disabled=false}
+}
+async function onCheat(){
+  const s=await getSample();if(!s){toast("The cheat sheet needs Claude access, available when this page is opened in Claude.");return}
+  const n=$("#notes");const b=$("#cheatBtn");b.disabled=true;
+  n.insertAdjacentHTML("afterbegin",'<div class="ai" id="cheat" style="margin:0 0 10px"><span class="lbl">AI cheat sheet</span><span id="cheatT">Thinking…</span></div>');
+  const out=$("#cheatT");
+  try{await s(`Write a compact revision cheat sheet on ${cur.tags.join(", ")} (${TRACKS[cur.track]}) for an undergraduate. 6 bullet lines starting with "• ", each under 18 words, plain text, the most exam- and interview-relevant facts.`,{modelTier:"quick",onText:({text})=>{out.textContent=text}})}
+  catch(e){out.textContent=errMsg(e)}
+  finally{b.disabled=false}
+}
+async function onTwin(level){
+  const s=await getSample();if(!s){toast("The twin generator needs Claude access, available when this page is opened in Claude.");return}
+  const btns=document.querySelectorAll("[data-twin]");btns.forEach(x=>x.disabled=true);
+  const note=$("#twinNote"),prev=note.textContent;note.textContent="Claude is writing a "+level+" twin…";
+  const target=cur.diff+(level==="harder"?200:level==="easier"?-150:0);
+  const shapes={
+    mcq:'{"q": string, "options": [4 strings], "ans": index 0-3 of the correct option, "explain": string (1-2 sentences)}',
+    flash:'{"q": string (front of card), "a": string (back, 2-3 short lines separated by \\n)}',
+    code:'{"title": string, "q": string (problem statement), "fn": string (JS function name), "starter": string (JS function stub with that name), "solution": string (complete correct JavaScript function), "tests": array of 4 [argsArray, expectedOutput] pairs using only JSON values, "explain": string (approach in 1-2 sentences)}'
+  };
+  const prompt=`Create ONE new practice question that tests the same concept as the original below but is not a copy: change the scenario, numbers or twist. Target difficulty about ${target} on an Elo-like scale where 900 is easy and 1500 is hard (${level} than the original).\nTopic tags: ${cur.tags.join(", ")}.\nOriginal:\n${qContext(cur)}${cur.type==="code"?"\nCode questions must be solvable in plain JavaScript; tests must be deterministic and the solution must pass them all.":""}\n\nReply with only a JSON object of this shape:\n${shapes[cur.type]}`;
+  try{
+    const j=await s.json(prompt,{cache:false});
+    const nq={id:"g"+Date.now(),track:cur.track,type:cur.type,tags:cur.tags.slice(),diff:Math.round(target),ai:true,parent:cur.id};
+    if(cur.type==="mcq"){
+      if(!j||typeof j.q!=="string"||!Array.isArray(j.options)||j.options.length<2||!(j.ans>=0&&j.ans<j.options.length))throw{code:"invalid_json"};
+      Object.assign(nq,{q:j.q,options:j.options.slice(0,4).map(String),ans:+j.ans,explain:String(j.explain||"")});
+    }else if(cur.type==="flash"){
+      if(!j||typeof j.q!=="string"||typeof j.a!=="string")throw{code:"invalid_json"};
+      Object.assign(nq,{q:j.q,a:j.a});
+    }else{
+      if(!j||!j.fn||!j.solution||!Array.isArray(j.tests)||!j.tests.length)throw{code:"invalid_json"};
+      note.textContent="Checking the twin's solution against its own tests…";
+      const chk=await runCode(String(j.solution),String(j.fn),j.tests);
+      if(chk.error||!chk.res.every(t=>t.ok))throw{code:"bad_tests"};
+      Object.assign(nq,{title:String(j.title||"AI twin"),q:String(j.q),fn:String(j.fn),starter:String(j.starter||`function ${j.fn}() {\n  \n}`),solution:String(j.solution),tests:j.tests,explain:String(j.explain||"")});
+    }
+    S.gen.push(nq);S.gen=S.gen.slice(-40);save();
+    load(nq,[["AI-generated twin of “"+label(byId(nq.parent)||cur).slice(0,40)+"”","ai"],["Difficulty "+level,""]]);
+    renderSide();note.textContent=prev;toast("New "+level+" twin ready.");
+  }catch(e){
+    note.textContent=e&&e.code==="bad_tests"?"The generated code twin failed its own tests, so it was discarded. Try again.":errMsg(e);
+  }finally{btns.forEach(x=>x.disabled=false)}
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.t){S.track=t.dataset.t;renderTracks();renderSide();next();return}
+  if(t.dataset.m){S.mode=t.dataset.m;renderModes();next();return}
+  if(t.dataset.tag){next({tag:t.dataset.tag});return}
+  if(t.dataset.id){const q=byId(t.dataset.id);if(q)load(q,[["Similar to what you just did",""]]);return}
+  if(t.dataset.twin){onTwin(t.dataset.twin);return}
+  if(t.classList.contains("opt")&&!answered){
+    const i=+t.dataset.i,ok=i===cur.ans;
+    document.querySelectorAll(".opt").forEach((b,j)=>{b.disabled=true;if(j===cur.ans)b.classList.add("right");else if(j===i)b.classList.add("wrong")});
+    showFeedback(ok?1:0,explainHTML(cur));return;
+  }
+  switch(t.id){
+    case "flipBtn":$("#flip").classList.add("on");$("#gradeRow").innerHTML=`<span class="eyebrow" style="flex-basis:100%">How well did you know it?</span><button class="btn sm primary" data-g="0">Didn't know</button><button class="btn sm" data-g="0.45">Partly</button><button class="btn sm sky" data-g="0.8">Got it</button><button class="btn sm go" data-g="1">Easy</button>`;break;
+    case "runBtn":onRun();break;
+    case "solBtn":if(!answered){showFeedback(0,explainHTML(cur)+`<pre class="sol">${esc(cur.solution)}</pre><p class="explain" style="margin-top:8px;font-size:13px">Queued for review. Try a twin to lock it in.</p>`)}break;
+    case "hintBtn":onHint();break;
+    case "reviewAi":onReview();break;
+    case "cheatBtn":onCheat();break;
+    case "skipBtn":next();break;
+    case "nextBtn":next();break;
+    case "reviewBtn":next({reviewOnly:true});break;
+  }
+  if(t.dataset.g!==undefined&&!answered){const g=+t.dataset.g;document.querySelectorAll("[data-g]").forEach(b=>b.disabled=true);showFeedback(g,g<0.6?'<p class="explain">Queued for review in a few questions.</p>':'<p class="explain">Locked in. It will show up less often now.</p>')}
+});
+
+/* ---------- boot ---------- */
+renderTracks();renderModes();renderSide();next();
+</script>
+</body>
+</html>
