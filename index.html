@@ -22,6 +22,7 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{background:var(--ground);color:var(--on-ground)}
 body{font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px;
@@ -39,7 +40,8 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 .brand h1{font-size:22px;font-weight:900;letter-spacing:-.01em;color:var(--paper)}
 .brand small{display:block;font-family:var(--f-body);font-size:12px;color:var(--on-ground-soft);font-weight:500;letter-spacing:.02em}
-.tracks{display:flex;flex-wrap:wrap;gap:8px;flex:1;min-width:0}
+.tracks{display:flex;flex-wrap:wrap;gap:8px;flex:1 1 360px;min-width:0}
+@media (max-width:760px){.tracks{order:3;flex-basis:100%}.track{padding:6px 12px;font-size:13px}}
 .track{border:2px solid var(--ink);background:var(--ground-2);color:var(--on-ground);padding:7px 14px;border-radius:999px;font-weight:600;font-size:14px;box-shadow:3px 3px 0 var(--ink);transition:transform .12s}
 .track:hover{transform:translate(-1px,-1px)}
 .track[aria-pressed="true"]{background:var(--mango);color:var(--ink)}
@@ -98,6 +100,8 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 .modes{display:flex;flex-wrap:wrap;gap:6px;background:var(--ground-2);border:2px solid var(--ink);border-radius:12px;padding:5px;align-self:flex-start;max-width:100%}
 .mode{border:0;background:transparent;color:var(--on-ground-soft);font-weight:700;padding:7px 13px;border-radius:8px;font-size:14px}
 .mode[aria-pressed="true"]{background:var(--paper);color:var(--ink)}
+.mode:disabled{opacity:.4;cursor:not-allowed}
+.mode small{font-size:11px;font-weight:600;opacity:.7;margin-left:4px;font-variant-numeric:tabular-nums}
 .why{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--on-ground-soft)}
 .chip{display:inline-flex;align-items:center;gap:5px;background:var(--ground-2);border:1.5px solid var(--ground-line);color:var(--on-ground);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600}
 .chip.hot{border-color:var(--coral);color:#FFC2C2}
@@ -269,6 +273,14 @@ const BANK=[
 {id:"d15",track:"dsa",type:"mcq",tags:["Graphs"],diff:1350,q:"Dijkstra's algorithm can give wrong answers when the graph has…",options:["Cycles","Negative edge weights","More than 10⁵ nodes","Undirected edges"],ans:1,explain:"Dijkstra finalizes a node once popped, assuming no later path can be cheaper. A negative edge breaks that. Use Bellman–Ford instead."},
 {id:"d16",track:"dsa",type:"mcq",tags:["Stack"],diff:1250,q:"A monotonic stack is the standard tool for…",options:["Next greater element for every index","Shortest path in a grid","Detecting a cycle in a linked list","Median of a stream"],ans:0,explain:"Keep a decreasing stack of indices; when a bigger value arrives, it is the next greater element for everything it pops. O(n) total."},
 {id:"d17",track:"dsa",type:"mcq",tags:["Sliding Window"],diff:1050,q:"Max sum of any k consecutive elements. Best approach?",options:["Try every subarray: O(n·k)","Sort, then take the top k","Fixed sliding window: add the new element, drop the old one","Binary search on the answer"],ans:2,explain:"Each slide changes the sum by +new −old, so the whole scan is O(n)."},
+// DSA flashcards
+{id:"d30",track:"dsa",type:"flash",tags:["Arrays","Sliding Window"],diff:950,q:"When do two pointers work on an array?",a:"When the array is sorted (or order can be exploited) and moving one end tells you which way the answer lies.\nClassic uses: pair sum in a sorted array, removing duplicates in place, container with most water.\nUsually O(n) time, O(1) space."},
+{id:"d31",track:"dsa",type:"flash",tags:["DP"],diff:1100,q:"Memoization vs tabulation?",a:"Memoization: top-down recursion that caches results; computes only the states it needs; risks deep recursion.\nTabulation: bottom-up loop that fills a table in dependency order; no recursion and easy to space-optimise."},
+{id:"d32",track:"dsa",type:"flash",tags:["Graphs","BFS/DFS"],diff:1200,q:"How do you detect a cycle in a directed graph?",a:"DFS with three colours: white (unvisited), grey (on the current path), black (done). Reaching a grey node means a back edge, so there is a cycle.\nAlternative: Kahn's topological sort; if it can't process every node, a cycle exists."},
+{id:"d33",track:"dsa",type:"flash",tags:["Trees"],diff:1000,q:"Name the four tree traversals and one use of each.",a:"Preorder (node, left, right): copy or serialise a tree.\nInorder (left, node, right): sorted output from a BST.\nPostorder (left, right, node): delete a tree, evaluate expressions.\nLevel order (BFS): print by levels, find min depth."},
+{id:"d34",track:"dsa",type:"flash",tags:["Hashing","Arrays"],diff:1050,q:"What is the prefix-sum + hashmap trick?",a:"Keep a running sum and a map from prefix sum to count. A subarray (j, i] sums to k exactly when prefix[i] − k was seen before.\nCounts subarrays with sum k in O(n), and works with negative numbers."},
+{id:"d35",track:"dsa",type:"flash",tags:["Binary Search"],diff:1300,q:"What does 'binary search on the answer' mean?",a:"When feasibility is monotonic (if x works, every bigger x works too), binary search over candidate answers and test each with a check function.\nExamples: minimum ship capacity, Koko eating bananas, splitting an array into k parts."},
+{id:"d36",track:"dsa",type:"flash",tags:["Stack","Strings"],diff:900,q:"Stack vs queue: when do you reach for each?",a:"Stack (LIFO): matching brackets, undo, DFS, monotonic-stack problems, evaluating expressions.\nQueue (FIFO): BFS, scheduling, sliding-window maximum (as a deque), producer and consumer buffers."},
 // ML
 {id:"m1",track:"ml",type:"mcq",tags:["Overfitting"],diff:900,q:"Training accuracy 99%, validation accuracy 71%. The model most likely has…",options:["High bias","High variance (overfitting)","A learning rate that is too small","Too little capacity"],ans:1,explain:"A big train/validation gap means the model memorised training data. Add regularisation, more data, or simplify the model."},
 {id:"m2",track:"ml",type:"mcq",tags:["Regularization"],diff:1100,q:"Compared with L2, L1 regularisation tends to…",options:["Make all weights small but non-zero","Drive many weights to exactly zero","Speed up convergence only","Have no effect on linear models"],ans:1,explain:"The L1 penalty has corners at zero, so optimisation often lands weights exactly at 0. That gives sparse models and built-in feature selection."},
@@ -368,9 +380,14 @@ function pick(opts={}){
   let p=pool();
   if(!p.length){toast("No "+S.mode+" questions in this track yet. Switched to Smart mix.");S.mode="mix";renderModes();p=pool()}
   const r=S.ratings[S.track];
-  if(opts.tag) p=p.filter(q=>q.tags.includes(opts.tag));
-  if(opts.reviewOnly){const due=p.filter(q=>S.review[q.id]!==undefined&&S.review[q.id]<=S.answered);if(due.length)p=due}
-  const recent=new Set(S.recent.slice(-5));
+  const trackAll=all().filter(q=>q.track===S.track);
+  if(opts.tag){const f=p.filter(q=>q.tags.includes(opts.tag));p=f.length?f:trackAll.filter(q=>q.tags.includes(opts.tag))}
+  if(opts.reviewOnly){
+    const isDue=q=>S.review[q.id]!==undefined&&S.review[q.id]<=S.answered,queued=q=>S.review[q.id]!==undefined;
+    const due=trackAll.filter(isDue),later=trackAll.filter(queued);
+    if(due.length)p=due;else if(later.length)p=later;
+  }
+  const recent=new Set(S.recent.slice(-Math.min(8,Math.max(1,p.length-2))));
   let best=null,bestScore=-1e9,bestWhy=[];
   for(const q of p){
     if(cur&&q.id===cur.id&&p.length>1)continue;
@@ -423,7 +440,10 @@ function renderTracks(){
   $("#tracks").innerHTML=Object.entries(TRACKS).map(([k,v])=>`<button class="track" data-t="${k}" aria-pressed="${S.track===k}">${v}</button>`).join("");
 }
 function renderModes(){
-  $("#modes").innerHTML=MODES.map(([k,v])=>`<button class="mode" data-m="${k}" aria-pressed="${S.mode===k}">${v}</button>`).join("");
+  const inTrack=all().filter(q=>q.track===S.track);
+  if(S.mode!=="mix"&&!inTrack.some(q=>q.type===S.mode))S.mode="mix";
+  $("#modes").innerHTML=MODES.map(([k,v])=>{const n=k==="mix"?inTrack.length:inTrack.filter(q=>q.type===k).length;
+    return `<button class="mode" data-m="${k}" aria-pressed="${S.mode===k}"${n?"":` disabled title="No ${v.toLowerCase()} in this track yet"`}>${v}<small>${n}</small></button>`}).join("");
 }
 function renderSide(){
   const t=S.track,r=Math.round(S.ratings[t]);
@@ -601,7 +621,7 @@ async function onTwin(level){
 /* ---------- events ---------- */
 document.addEventListener("click",e=>{
   const t=e.target.closest("button");if(!t)return;
-  if(t.dataset.t){S.track=t.dataset.t;renderTracks();renderSide();next();return}
+  if(t.dataset.t){S.track=t.dataset.t;renderTracks();renderModes();renderSide();next();return}
   if(t.dataset.m){S.mode=t.dataset.m;renderModes();next();return}
   if(t.dataset.tag){next({tag:t.dataset.tag});return}
   if(t.dataset.id){const q=byId(t.dataset.id);if(q)load(q,[["Similar to what you just did",""]]);return}

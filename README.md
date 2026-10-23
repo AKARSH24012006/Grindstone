@@ -5,7 +5,7 @@ Adaptive practice for DSA, Machine Learning, C++ and CS core subjects. Pick what
 ## Features
 
 - **Four tracks:** DSA & Coding, Machine Learning, C++, CS Core (OS, DBMS, Networks, System Design)
-- **Three formats:** multiple choice, flip flashcards, and coding problems with a built-in test runner
+- **Three formats:** multiple choice, flip flashcards, and coding problems with a built-in test runner (58 starter questions; each mode shows how many questions it has, and modes a track doesn't have yet are greyed out)
 - **Adaptive level:** an Elo-style rating per track that updates after every answer based on question difficulty, with tiers (Rookie → Master) and a rating history sparkline
 - **Smart picker:** chooses the next question from your rating, weakest topics, unseen questions and mistakes due for review, and shows *why* it picked it
 - **Code runner:** JavaScript solutions run in a Web Worker against test cases, with a 2 s timeout for infinite loops
@@ -23,12 +23,22 @@ It's a single static file, no build step:
 git clone https://github.com/AKARSH24012006/Grindstone.git
 cd Grindstone
 # open index.html in a browser, or serve it:
-python3 -m http.server 8000
+python3 -m http.server 8000   # or: npm start
 ```
 
 Then visit `http://localhost:8000`. It also works on GitHub Pages (Settings → Pages → deploy from `main`).
 
 The AI buttons use Claude's artifact runtime, so they only work when the page is opened as a Claude artifact. Everywhere else they show a short message and the rest of the app works normally.
+
+## Tests
+
+A Playwright end-to-end suite (61 checks) covers every feature: question bank integrity, every reference solution passing in the real code runner, MCQ/flashcard/code grading, rating going up and down, syntax errors, the infinite-loop timeout, every track × mode combo, topic drill, similar questions, mistake review, AI buttons degrading outside Claude, progress surviving a reload, no console errors, and no sideways scroll at phone width.
+
+```bash
+npm install
+npx playwright install chromium
+npm test
+```
 
 ## How the adaptive engine works
 

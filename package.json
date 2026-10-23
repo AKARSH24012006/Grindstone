@@ -1,0 +1,13 @@
+{
+  "name": "grindstone",
+  "version": "1.1.0",
+  "description": "Adaptive practice for DSA, ML, C++ and CS core",
+  "private": true,
+  "scripts": {
+    "start": "npx --yes serve .",
+    "test": "node tests/e2e.test.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}
