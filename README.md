@@ -5,15 +5,19 @@ Adaptive practice for DSA, Machine Learning, C++ and CS core subjects. Pick what
 ## Features
 
 - **Four tracks:** DSA & Coding, Machine Learning, C++, CS Core (OS, DBMS, Networks, System Design)
-- **Three formats:** multiple choice, flip flashcards, and coding problems with a built-in test runner (58 starter questions; each mode shows how many questions it has, and modes a track doesn't have yet are greyed out)
+- **Three formats:** multiple choice, flip flashcards, and coding problems with a built-in test runner (69 starter questions; each mode shows how many questions it has, and modes a track doesn't have yet are greyed out)
+- **Coding in three tracks:** DSA (Two Sum, Kadane, sliding window, islands…), ML (sigmoid, stable softmax, MSE, precision/recall, z-score, k-NN, a gradient descent step) and CS Core (FIFO/LRU page faults, round-robin waiting time, subnet hosts)
+- **Fair MCQs:** options are shuffled every time, so the answer position can't be memorised
 - **Adaptive level:** an Elo-style rating per track that updates after every answer based on question difficulty, with tiers (Rookie → Master) and a rating history sparkline
-- **Smart picker:** chooses the next question from your rating, weakest topics, unseen questions and mistakes due for review, and shows *why* it picked it
-- **Code runner:** JavaScript solutions run in a Web Worker against test cases, with a 2 s timeout for infinite loops
+- **Smart picker:** chooses the next question from your rating, weakest topics, unseen questions, mistakes and spaced refreshes due, and shows *why* it picked it. Skipped questions don't bounce straight back, and Smart mix rotates formats
+- **Code runner:** JavaScript solutions run in a Web Worker against test cases, with a 2 s timeout for infinite loops. Results are compared structurally (object key order doesn't matter) and numbers within 1e-6, so floating-point answers aren't failed on rounding
 - **Similar questions:** ranked by shared topics, difficulty and format
-- **Mistake review:** missed questions come back a few questions later (spaced repetition)
-- **Topic mastery bars:** tap any topic to drill it
-- **Daily XP goal, streaks and accuracy**, saved in the browser (`localStorage`)
-- **AI features (when opened inside Claude):** twin generator (same / easier / harder), hints, code review and topic cheat sheets. Generated code twins are verified against their own tests before they're shown.
+- **Spaced repetition:** missed questions come back a few questions later; questions you got right come back after growing gaps (Leitner boxes: 9 → 20 → 45 → 100 answers)
+- **Topic mastery bars:** tap any topic to drill it; topics you haven't tried show *new* instead of a made-up score
+- **Daily XP goal, streaks and accuracy**, saved in the browser (`localStorage`). Days roll over at your local midnight, and a broken streak shows 0
+- **Keyboard shortcuts:** 1–4 or A–D to answer, Space to flip, 1–4 to rate a flashcard, Enter for next, S to skip, Ctrl/⌘ + Enter to run code
+- **Reset progress** with a two-tap confirmation
+- **AI features (when opened inside Claude):** twin generator (same / easier / harder), hints, code review and topic cheat sheets. Generated code twins are verified against their own tests before they're shown, a pending AI reply is cancelled when you move to another question, and a twin is always built from the question you asked about.
 
 ## Run it
 
@@ -32,7 +36,7 @@ The AI buttons use Claude's artifact runtime, so they only work when the page is
 
 ## Tests
 
-A Playwright end-to-end suite (61 checks) covers every feature: question bank integrity, every reference solution passing in the real code runner, MCQ/flashcard/code grading, rating going up and down, syntax errors, the infinite-loop timeout, every track × mode combo, topic drill, similar questions, mistake review, AI buttons degrading outside Claude, progress surviving a reload, no console errors, and no sideways scroll at phone width.
+A Playwright end-to-end suite (124 checks) covers every feature: question bank integrity, every reference solution passing in the real code runner, MCQ/flashcard/code grading, option shuffling, keyboard shortcuts, the tolerant checker, rating going up and down, syntax errors, the infinite-loop timeout, every track × mode combo, topic drill, similar questions, spaced repetition, skip handling, streaks and local-midnight rollover (tested in IST), reset, progress surviving a reload, no console errors, and no sideways scroll at phone width. The AI features are tested against a mock Claude: hints, cheat sheets, code review, cancellation, and twin generation including rejected and self-failing twins.
 
 ```bash
 npm install
@@ -45,7 +49,7 @@ npm test
 - **Rating update:** `expected = 1 / (1 + 10^((difficulty − rating) / 400))`, then `rating += 32 × (score − expected)`
 - **Score:** MCQ is 0 or 1; flashcards are self-graded (0 / 0.45 / 0.8 / 1); code scores 1 on first pass, less with more attempts, 0 if you reveal the solution
 - **Topic mastery:** exponential moving average of scores per tag
-- **Next question score:** closeness to your rating + weakness of its topics + due-for-review bonus + new-question bonus − recently-seen penalty
+- **Next question score:** closeness to your rating + weakness of its topics + mistake-review bonus + spaced-refresh bonus + new-question bonus − recently-seen, recently-skipped and same-format-streak penalties
 
 ## Roadmap
 
@@ -54,6 +58,7 @@ npm test
 - C++ and Python code execution via a sandboxed judge
 - Server-side LLM question generation and grading
 - Notes mode with spaced-repetition decks
+- C++ code questions once a C++ runner is available
 
 ## Tech
 

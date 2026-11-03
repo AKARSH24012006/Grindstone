@@ -70,9 +70,9 @@ const results = []; const ok=(n,c,extra='')=>results.push(`${c?'PASS':'FAIL'}  $
     ok(`mode "${m}" serves matching type`, m==='mix'||ty===m, ty);
   }
   // mode with no questions in a track → fallback
-  await p.click('.mode[data-m="code"]'); await p.click('.track[data-t="ml"]'); await p.waitForTimeout(50);
-  ok('ML has no code questions → resets to Smart mix', await p.evaluate(()=>S.mode==='mix'&&cur.track==='ml'));
-  ok('Code mode disabled on ML track', await p.locator('.mode[data-m="code"]:disabled').count()===1);
+  await p.click('.mode[data-m="code"]'); await p.click('.track[data-t="cpp"]'); await p.waitForTimeout(50);
+  ok('C++ has no code questions → resets to Smart mix', await p.evaluate(()=>S.mode==='mix'&&cur.track==='cpp'));
+  ok('Code mode disabled on C++ track', await p.locator('.mode[data-m="code"]:disabled').count()===1);
   ok('mode buttons show question counts', /\d/.test(await p.textContent('.mode[data-m="flash"]')));
   for (const t of ['dsa','ml','cpp','cs']){await p.click(`.track[data-t="${t}"]`);for(const m of ['mcq','flash','code']){const b=p.locator(`.mode[data-m="${m}"]`);if(await b.isDisabled())continue;await b.click();if(!(await p.evaluate(m=>cur.type===m,m)))ok(`track ${t} mode ${m}`,false);}}
   ok('every enabled track × mode combo serves the right type', true);
@@ -120,6 +120,164 @@ const results = []; const ok=(n,c,extra='')=>results.push(`${c?'PASS':'FAIL'}  $
 
   ok('no JS errors in console', errors.length===0, errors.join(' | '));
   await p.screenshot({path:shots+'/desktop.png'});
+
+
+  /* ===================== v1.2 features ===================== */
+  const q2 = await ctx.newPage(); const e2=[]; q2.on('pageerror',e=>e2.push(e.message));
+  await q2.route(/fonts\.(googleapis|gstatic)/, r=>r.abort());
+  await q2.goto('file://'+path); await q2.evaluate(()=>{localStorage.clear()}); await q2.reload(); await q2.waitForTimeout(300);
+  const L2 = id=>q2.evaluate(id=>load(byId(id),[['test','']]),id);
+
+  // MCQ shuffle: correct answer must not sit in a fixed slot
+  const slots = await q2.evaluate(()=>{const seen=new Set();for(let i=0;i<40;i++){load(byId('d10'),[]);seen.add(curOrder.indexOf(cur.ans))}return [...seen]});
+  ok('MCQ options are shuffled (answer appears in several slots)', slots.length>=3, 'slots '+slots.join(','));
+  const bias = await q2.evaluate(()=>{const c=[0,0,0,0];for(const q of BANK.filter(q=>q.type==='mcq'))for(let i=0;i<50;i++){load(q,[]);c[curOrder.indexOf(q.ans)]++}return c});
+  ok('answer position no longer favours B', Math.max(...bias)/bias.reduce((a,b)=>a+b) < 0.32, 'A/B/C/D '+bias.join('/'));
+  await L2('d10'); await q2.click(`.opt[data-i="${await q2.evaluate(()=>cur.ans)}"]`);
+  ok('shuffled MCQ still grades the right option correct', await q2.locator('.opt.right').count()===1 && await q2.locator('.opt.wrong').count()===0);
+  ok('AI hint context lists options in displayed order', await q2.evaluate(()=>{load(byId('d11'),[]);const c=qContext(cur);return c.includes('A) '+cur.options[curOrder[0]])}));
+
+  // keyboard
+  await L2('d13'); const pos = await q2.evaluate(()=>curOrder.indexOf(cur.ans));
+  await q2.locator('body').click({position:{x:5,y:5}}); await q2.keyboard.press(String(pos+1));
+  ok('key 1–4 answers an MCQ', await q2.locator('.opt.right').count()===1 && await q2.locator('.opt.wrong').count()===0);
+  await q2.locator('body').click({position:{x:5,y:5}}); const bef=await q2.evaluate(()=>cur.id); await q2.keyboard.press('Enter');
+  ok('Enter goes to the next question', await q2.evaluate(b=>cur.id!==b&&!answered,bef));
+  await L2('d10'); await q2.locator('body').click({position:{x:5,y:5}}); await q2.keyboard.press('b');
+  ok('letter keys A–D answer an MCQ', await q2.evaluate(()=>answered));
+  await L2('c1'); await q2.locator('body').click({position:{x:5,y:5}}); await q2.keyboard.press(' ');
+  ok('Space flips a flashcard', await q2.locator('#flip.on').count()===1);
+  ok('flipped answer exposed to screen readers, prompt hidden', await q2.evaluate(()=>!document.querySelector('#flip .back').hasAttribute('aria-hidden')&&document.querySelector('#flip .front').getAttribute('aria-hidden')==='true'));
+  await q2.keyboard.press(' '); ok('second Space does not auto-grade the card', await q2.evaluate(()=>!answered));
+  await q2.keyboard.press('4'); ok('key 4 rates a flashcard "Easy"', await q2.evaluate(()=>answered) && /Locked in/.test(await q2.textContent('#fb')));
+  await L2('c2'); ok('unflipped flashcard answer hidden from screen readers', await q2.evaluate(()=>document.querySelector('#flip .back').getAttribute('aria-hidden')==='true'));
+  await L2('d7'); await q2.fill('#code', await q2.evaluate(()=>cur.solution)); await q2.focus('#code'); await q2.keyboard.press('Control+Enter'); await q2.waitForSelector('.verdict',{timeout:4000});
+  ok('Ctrl+Enter runs code tests', await q2.locator('.test.ok').count()===4);
+  await L2('d12'); await q2.locator('body').click({position:{x:5,y:5}}); const sk=await q2.evaluate(()=>cur.id); await q2.keyboard.press('s');
+  ok('S skips', await q2.evaluate(b=>cur.id!==b,sk));
+  ok('shortcut hint shown for current format', /Keys:/.test(await q2.textContent('#keys')));
+
+  // tolerant checker
+  const tol = await q2.evaluate(async()=>{
+    const r1=await runCode('function f(){return [0.1+0.2, 1/3]}','f',[[[],[0.3,0.3333333333]]]);
+    const r2=await runCode('function f(){return 0.301}','f',[[[],0.3]]);
+    const r3=await runCode('function f(){return {b:2,a:1}}','f',[[[],{a:1,b:2}]]);
+    const r4=await runCode('function f(){return {a:1}}','f',[[[],{a:1,b:2}]]);
+    const r5=await runCode('function f(){return [1,2]}','f',[[[],[1,2,3]]]);
+    const r6=await runCode('function f(){return "1"}','f',[[[],1]]);
+    const r7=await runCode('function f(x){return x}','f',[["notarray",1]]);
+    return [r1.res[0].ok,!r2.res[0].ok,r3.res[0].ok,!r4.res[0].ok,!r5.res[0].ok,!r6.res[0].ok,!r7.res[0].ok&&/must be an array/.test(r7.res[0].out)]});
+  ok('checker accepts tiny float error (0.1+0.2 vs 0.3)', tol[0]);
+  ok('checker rejects real numeric mistakes', tol[1]);
+  ok('checker compares objects regardless of key order', tol[2]);
+  ok('checker rejects missing keys / wrong length / wrong type', tol[3]&&tol[4]&&tol[5]);
+  ok('checker reports malformed tests instead of crashing', tol[6]);
+
+  // code coverage across tracks
+  const modes = await q2.evaluate(()=>['dsa','ml','cpp','cs'].map(t=>[t,all().filter(q=>q.track===t&&q.type==='code').length]));
+  ok('ML and CS tracks now have code problems', modes[1][1]>=7&&modes[3][1]>=4, JSON.stringify(modes));
+  await q2.click('.track[data-t="ml"]'); ok('Code mode enabled on ML', !(await q2.locator('.mode[data-m="code"]').isDisabled()));
+  await q2.click('.mode[data-m="code"]'); ok('ML code mode serves an ML code problem', await q2.evaluate(()=>cur.track==='ml'&&cur.type==='code'));
+  await q2.click('.track[data-t="cpp"]'); ok('Code mode still disabled on C++ (no runner)', await q2.locator('.mode[data-m="code"]').isDisabled());
+  await q2.click('.track[data-t="dsa"]'); await q2.click('.mode[data-m="mix"]');
+
+  // mastery "new"
+  await q2.evaluate(()=>{localStorage.clear();S=fresh();renderSide()});
+  ok('untried topics show "new", not a fake 50%', await q2.locator('.bar .new').count()===await q2.locator('.bar').count() && !(await q2.textContent('#bars')).includes('50%'));
+  await L2('d10'); await q2.click(`.opt[data-i="${await q2.evaluate(()=>cur.ans)}"]`);
+  ok('answered topic shows a real percentage', /BinarySearch\d+%/.test((await q2.textContent('#bars')).replace(/\s/g,'')));
+
+  // spaced repetition
+  const srs = await q2.evaluate(()=>({box:S.box.d10,due:S.srs.d10,ans:S.answered}));
+  ok('correct answer scheduled for a spaced refresh', srs.box===1&&srs.due===srs.ans+9, JSON.stringify(srs));
+  const refreshed = await q2.evaluate(()=>{S.answered=S.srs.d10;S.recent=S.recent.filter(x=>x!=='d10').concat(['d10','d11','d12','d13','d14']).slice(-8);S.mode='mcq';const p=pool();const r=[];for(let i=0;i<80;i++){cur=null;const x=pick();if(x.q.id==='d10')r.push(x.why.map(w=>w[0]).join('|'))}S.mode='mix';return r});
+  ok('due refresh comes back with a "Spaced refresh" reason', refreshed.some(w=>/Spaced refresh/.test(w)), refreshed.length+' of 80 picks');
+  await q2.evaluate(()=>load(byId('d14'),[])); await q2.click(`.opt[data-i="${await q2.evaluate(()=>(cur.ans+1)%4)}"]`);
+  ok('wrong answer resets its box and queues review', await q2.evaluate(()=>S.box.d14===0&&S.review.d14!==undefined&&S.srs.d14===undefined));
+
+  // skip penalty
+  const skipTest = await q2.evaluate(()=>{S.mode='mcq';S.recent=[];load(byId('d11'),[]);S.skips.d11=S.answered;const ids=[];for(let i=0;i<3;i++){next();ids.push(cur.id)}S.mode='mix';return ids});
+  ok('a skipped question does not bounce straight back', !skipTest.includes('d11'), skipTest.join(','));
+
+  // format variety in Smart mix
+  const variety = await q2.evaluate(()=>{S.mode='mix';const t=[];for(let i=0;i<40;i++){next();t.push(cur.type)}let run=1,maxRun=1;for(let i=1;i<t.length;i++){run=t[i]===t[i-1]?run+1:1;maxRun=Math.max(maxRun,run)}return {maxRun,kinds:new Set(t).size}});
+  ok('Smart mix varies formats (no long same-type runs)', variety.maxRun<=3&&variety.kinds===3, JSON.stringify(variety));
+
+  // streak + local dates
+  const streak = await q2.evaluate(()=>{const r={};S.streak=5;S.lastActive='2000-01-01';renderSide();r.old=$('#streak').textContent;
+    S.lastActive=yesterday();renderSide();r.y=$('#streak').textContent+' '+$('#streakU').textContent;
+    load(byId('d13'),[]);grade(1);r.after=S.streak+' '+$('#streakU').textContent;
+    S.streak=1;renderSide();r.one=$('#streakU').textContent;return r});
+  ok('broken streak shows 0 instead of the old number', streak.old==='0');
+  ok('yesterday\'s streak still counts and grows today', streak.y==='5 days'&&streak.after==='6 days', JSON.stringify(streak));
+  ok('"1 day" singular / "days" plural', streak.one==='day');
+
+  // reset
+  await q2.click('#resetBtn');
+  ok('first Reset click only asks to confirm', /Tap again/.test(await q2.textContent('#resetBtn')) && await q2.evaluate(()=>S.answered>0));
+  await q2.click('#resetBtn');
+  ok('second Reset click erases progress', await q2.evaluate(()=>S.answered===0&&S.xp===0&&Object.keys(S.seen).length===0) && (await q2.textContent('#xp'))==='0');
+  await q2.reload(); await q2.waitForTimeout(200);
+  ok('reset survives a reload', await q2.evaluate(()=>S.answered===0));
+  ok('no JS errors (feature pass)', e2.length===0, e2.join(' | '));
+  await q2.close();
+
+  /* ===================== timezone (IST) ===================== */
+  const tzc = await b.newContext({timezoneId:'Asia/Kolkata'}); const tz = await tzc.newPage();
+  await tz.clock.install({time:new Date('2026-11-03T20:00:00Z')}); // 01:30 on 4 Nov in India, still 3 Nov in UTC
+  await tz.route(/fonts\./,r=>r.abort()); await tz.goto('file://'+path); await tz.waitForTimeout(100);
+  const d = await tz.evaluate(()=>({t:today(),y:yesterday()}));
+  ok('day rolls over at local midnight (IST), not UTC', d.t==='2026-11-04'&&d.y==='2026-11-03', JSON.stringify(d));
+  await tzc.close();
+
+  /* ===================== AI features with a mock Claude ===================== */
+  const mc = await b.newContext(); const ai = await mc.newPage(); const e3=[]; ai.on('pageerror',e=>e3.push(e.message));
+  await ai.addInitScript(()=>{
+    window.__mock={delay:0,text:'Think about halving the range.',json:null,calls:[]};
+    const sample=(input,opts={})=>new Promise((res,rej)=>{__mock.calls.push(String(input).slice(0,80));
+      const t=setTimeout(()=>{if(opts.signal&&opts.signal.aborted)return rej({code:'cancelled'});opts.onText&&opts.onText({text:__mock.text,delta:__mock.text});res({text:__mock.text,truncated:false})},__mock.delay);
+      if(opts.signal)opts.signal.addEventListener('abort',()=>{clearTimeout(t);rej({code:'cancelled'})})});
+    sample.json=(input,opts={})=>new Promise(res=>setTimeout(()=>res(JSON.parse(JSON.stringify(__mock.json))),__mock.delay));
+    window.claude={use:async n=>n==='sample'?sample:null};
+  });
+  await ai.route(/fonts\./,r=>r.abort()); await ai.goto('file://'+path); await ai.evaluate(()=>localStorage.clear()); await ai.reload(); await ai.waitForTimeout(200);
+  const LA = id=>ai.evaluate(id=>load(byId(id),[]),id);
+  await LA('d10'); await ai.click('#hintBtn'); await ai.waitForFunction(()=>/halving/.test(document.querySelector('#aiOut').textContent));
+  ok('AI hint streams into the card', true);
+  await ai.click('#cheatBtn'); await ai.waitForFunction(()=>/halving/.test(document.querySelector('#notes').textContent));
+  ok('AI cheat sheet renders in notes', true);
+  await LA('d7'); await ai.click('#reviewAi'); await ai.waitForFunction(()=>/halving/.test(document.querySelector('#aiOut').textContent));
+  ok('AI code review renders', true);
+  // hint cancelled when moving on
+  await ai.evaluate(()=>{__mock.delay=400}); await LA('d10'); await ai.click('#hintBtn'); await ai.click('#skipBtn'); await ai.waitForTimeout(600);
+  ok('pending AI hint does not leak onto the next question', (await ai.textContent('#aiOut')).trim()==='');
+  // MCQ twin
+  await ai.evaluate(()=>{__mock.delay=0;__mock.json={q:'Twin: complexity of searching a sorted array by halving?',options:['O(n)','O(1)','O(log n)','O(n²)'],ans:2,explain:'Halves each step.'}});
+  await LA('d10'); await ai.click('[data-twin="harder"]'); await ai.waitForFunction(()=>cur&&cur.ai);
+  const tw = await ai.evaluate(()=>({type:cur.type,parent:cur.parent,diff:cur.diff,ans:cur.ans,n:S.gen.length}));
+  ok('MCQ twin generated, linked to original, harder', tw.type==='mcq'&&tw.parent==='d10'&&tw.diff===1000&&tw.n===1, JSON.stringify(tw));
+  await ai.click(`.opt[data-i="2"]`); ok('MCQ twin grades correctly', await ai.locator('.opt.right').count()===1&&await ai.locator('.opt.wrong').count()===0);
+  // flash twin
+  await ai.evaluate(()=>{__mock.json={q:'Twin: what is a vtable?',a:'Table of virtual function pointers.'}}); await LA('c3'); await ai.click('[data-twin="same"]'); await ai.waitForFunction(()=>cur&&cur.ai&&cur.type==='flash');
+  ok('flashcard twin generated', await ai.evaluate(()=>cur.parent==='c3'));
+  // code twin good
+  await ai.evaluate(()=>{__mock.json={title:'Tribonacci Stairs',q:'Steps of 1, 2 or 3.',fn:'ways',starter:'function ways(n) {\n}',solution:'function ways(n){const d=[1,1,2];for(let i=3;i<=n;i++)d[i]=d[i-1]+d[i-2]+d[i-3];return d[n]}',tests:[[[3],4],[[4],7],[[5],13],[[1],1]],explain:'Sum of last three.'}});
+  await LA('d7'); await ai.click('[data-twin="harder"]'); await ai.waitForFunction(()=>cur&&cur.ai&&cur.type==='code',null,{timeout:5000});
+  ok('verified code twin is served', await ai.evaluate(()=>cur.fn==='ways'&&cur.parent==='d7'));
+  // code twin with broken solution is discarded
+  await ai.evaluate(()=>{__mock.json={title:'Bad',q:'x',fn:'bad',starter:'function bad(){}',solution:'function bad(n){return n}',tests:[[[1],2]],explain:''}});
+  await LA('d7'); await ai.click('[data-twin="same"]'); await ai.waitForFunction(()=>/discarded/.test(document.querySelector('#twinNote').textContent),null,{timeout:5000});
+  ok('code twin that fails its own tests is discarded', await ai.evaluate(()=>cur.id==='d7'));
+  // malformed MCQ JSON rejected
+  await ai.evaluate(()=>{__mock.json={q:'x',options:['a'],ans:5}}); await LA('d10'); await ai.click('[data-twin="same"]'); await ai.waitForTimeout(150);
+  ok('malformed twin JSON rejected with a message', await ai.evaluate(()=>cur.id==='d10') && /right shape/.test(await ai.textContent('#twinNote')));
+  // twin built from the original even if you move on
+  await ai.evaluate(()=>{__mock.delay=300;__mock.json={q:'Twin of BST inorder',options:['a','b','c','d'],ans:0,explain:''}});
+  await LA('d13'); await ai.click('[data-twin="same"]'); await LA('m1'); await ai.waitForFunction(()=>cur&&cur.ai&&cur.q.startsWith('Twin of BST'),null,{timeout:3000});
+  ok('twin keeps the original question\'s track and tags after you move on', await ai.evaluate(()=>cur.parent==='d13'&&cur.track==='dsa'&&cur.tags.join()==='Trees'));
+  ok('twins persist across reload', await (async()=>{await ai.reload();await ai.waitForTimeout(200);return ai.evaluate(()=>S.gen.length===4)})());
+  ok('no JS errors (AI pass)', e3.length===0, e3.join(' | '));
+  await mc.close();
 
   // mobile
   const m = await b.newPage({viewport:{width:390,height:844}}); const merr=[]; m.on('pageerror',e=>merr.push(e.message));

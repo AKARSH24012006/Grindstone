@@ -82,6 +82,11 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 .bar i b{display:block;height:100%;transition:width .5s}
 .bar:hover span:first-child{text-decoration:underline}
 .weak{color:var(--coral);font-size:11px;font-weight:700;margin-left:4px}
+.new{color:var(--ink-soft);font-size:11px;font-weight:700;margin-left:4px;border:1.5px dashed var(--ink-soft);border-radius:5px;padding:0 4px}
+.reset{align-self:flex-start;background:none;border:0;color:var(--on-ground-soft);font-size:12.5px;font-weight:600;text-decoration:underline;text-underline-offset:3px;padding:2px 0}
+.reset:hover,.reset[data-armed]{color:#FFC2C2}
+.keys{margin:-4px 0 0;font-size:12px;color:var(--on-ground-soft);font-family:var(--f-mono)}
+@media (hover:none){.keys{display:none}}
 
 .btn{border:2.5px solid var(--ink);background:var(--paper);color:var(--ink);font-weight:700;padding:9px 14px;border-radius:10px;box-shadow:3px 3px 0 var(--ink);transition:transform .1s,box-shadow .1s;display:inline-flex;align-items:center;gap:7px;font-size:14px}
 .btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
@@ -193,7 +198,7 @@ pre.sol{background:var(--ink);color:#F5E9D4;font-family:var(--f-mono);font-size:
   <header class="top">
     <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Grindstone<small>adaptive practice that levels with you</small></h1></div>
     <nav class="tracks" id="tracks" aria-label="Choose what to practice"></nav>
-    <div class="stats"><span class="stat">🔥 <b id="streak">0</b> day</span><span class="stat">⚡ <b id="xp">0</b> XP</span><span class="stat">✔ <b id="acc">0%</b></span></div>
+    <div class="stats"><span class="stat">🔥 <b id="streak">0</b> <span id="streakU">days</span></span><span class="stat">⚡ <b id="xp">0</b> XP</span><span class="stat">✔ <b id="acc">0%</b></span></div>
   </header>
 
   <div class="grid">
@@ -214,12 +219,14 @@ pre.sol{background:var(--ink);color:#F5E9D4;font-family:var(--f-mono);font-size:
         <div class="review"><div><div class="big" id="dueN">0</div><div class="eyebrow">questions due</div></div>
           <button class="btn sm" id="reviewBtn">Review now</button></div>
       </section>
+      <button class="reset" id="resetBtn">Reset all progress</button>
     </aside>
 
     <main class="stage">
       <div class="modes" id="modes" role="group" aria-label="Question format"></div>
       <div class="why" id="why"></div>
       <article class="card" id="card"></article>
+      <p class="keys" id="keys"></p>
       <div class="twin">
         <strong>✦ Twin generator</strong>
         <button class="btn sm lilac" data-twin="same">Same level</button>
@@ -295,6 +302,14 @@ const BANK=[
 {id:"m21",track:"ml",type:"flash",tags:["Metrics","Data"],diff:950,q:"What is k-fold cross-validation and why use it?",a:"Split data into k folds; train on k−1 and validate on the remaining one, rotating k times; average the scores.\nGives a more stable estimate than one split and uses all data for both training and validation."},
 {id:"m22",track:"ml",type:"flash",tags:["Neural Nets"],diff:1050,q:"Sigmoid vs softmax in the output layer?",a:"Sigmoid: one independent probability per output, for binary or multi-label tasks.\nSoftmax: probabilities across classes that sum to 1, for single-label multi-class tasks."},
 {id:"m23",track:"ml",type:"flash",tags:["Optimization"],diff:1200,q:"What do momentum and Adam add to plain SGD?",a:"Momentum keeps a running average of gradients, smoothing noisy steps and speeding through ravines.\nAdam adds per-parameter step sizes from a running average of squared gradients, plus bias correction."},
+// ML code (JavaScript runner, numbers checked to 6 decimals)
+{id:"m30",track:"ml",type:"code",tags:["Neural Nets"],diff:850,title:"Sigmoid",q:"Return the logistic sigmoid of x: 1 / (1 + e^(−x)). Number answers are checked to 6 decimal places.",fn:"sigmoid",starter:"function sigmoid(x) {\n  \n}",tests:[T([0],0.5),T([2],0.8807970779778823),T([-1],0.2689414213699951),T([10],0.9999546021312976)],solution:"function sigmoid(x) {\n  return 1 / (1 + Math.exp(-x));\n}",explain:"Sigmoid squashes any real number into (0, 1), which is why it turns a logit into a binary probability. sigmoid(0) = 0.5."},
+{id:"m31",track:"ml",type:"code",tags:["Neural Nets"],diff:1150,title:"Stable Softmax",q:"Return the softmax of an array of logits: exp(xᵢ) / Σ exp(xⱼ). It must still work for big inputs like [1000, 1000, 1000] without returning NaN.",fn:"softmax",starter:"function softmax(logits) {\n  \n}",tests:[T([[1,2,3]],[0.09003057317038046,0.24472847105479764,0.6652409557748218]),T([[0,0]],[0.5,0.5]),T([[1000,1000,1000]],[0.3333333333333333,0.3333333333333333,0.3333333333333333]),T([[5]],[1])],solution:"function softmax(logits) {\n  const m = Math.max(...logits);\n  const e = logits.map(x => Math.exp(x - m));\n  const sum = e.reduce((a, b) => a + b, 0);\n  return e.map(x => x / sum);\n}",explain:"Subtract the largest logit first. Softmax doesn't change when every input shifts by the same amount, and exp never sees a huge number, so nothing overflows to Infinity."},
+{id:"m32",track:"ml",type:"code",tags:["Metrics"],diff:850,title:"Mean Squared Error",q:"Given arrays yTrue and yPred of equal length, return the mean of the squared differences.",fn:"mse",starter:"function mse(yTrue, yPred) {\n  \n}",tests:[T([[1,2,3],[1,2,3]],0),T([[1,2,3],[2,2,4]],0.6666666666666666),T([[0],[3]],9),T([[1.5,2.5],[1,3]],0.25)],solution:"function mse(yTrue, yPred) {\n  let s = 0;\n  for (let i = 0; i < yTrue.length; i++) s += (yTrue[i] - yPred[i]) ** 2;\n  return s / yTrue.length;\n}",explain:"Square each error so positives and negatives don't cancel and big misses count more, then average."},
+{id:"m33",track:"ml",type:"code",tags:["Metrics"],diff:1050,title:"Precision and Recall",q:"yTrue and yPred are arrays of 0/1 labels. Return { precision, recall }. If a denominator is 0, return 0 for that value.",fn:"precisionRecall",starter:"function precisionRecall(yTrue, yPred) {\n  // return { precision, recall }\n}",tests:[T([[1,0,1,1,0],[1,1,1,0,0]],{precision:0.6666666666666666,recall:0.6666666666666666}),T([[1,1,0,0],[1,0,0,0]],{precision:1,recall:0.5}),T([[0,0],[1,1]],{precision:0,recall:0}),T([[1,0,1],[1,0,1]],{precision:1,recall:1})],solution:"function precisionRecall(yTrue, yPred) {\n  let tp = 0, fp = 0, fn = 0;\n  for (let i = 0; i < yTrue.length; i++) {\n    if (yPred[i] && yTrue[i]) tp++;\n    else if (yPred[i]) fp++;\n    else if (yTrue[i]) fn++;\n  }\n  return { precision: tp + fp ? tp / (tp + fp) : 0, recall: tp + fn ? tp / (tp + fn) : 0 };\n}",explain:"Count true positives, false positives and false negatives in one pass. Precision = TP/(TP+FP), recall = TP/(TP+FN)."},
+{id:"m34",track:"ml",type:"code",tags:["Data"],diff:1000,title:"Z-score Standardisation",q:"Return each value as (x − mean) / std, using the population standard deviation (divide by n). If all values are equal, return all zeros.",fn:"zscore",starter:"function zscore(values) {\n  \n}",tests:[T([[1,2,3]],[-1.224744871391589,0,1.224744871391589]),T([[5,5,5]],[0,0,0]),T([[0,10]],[-1,1]),T([[2,4,4,4,5,5,7,9]],[-1.5,-0.5,-0.5,-0.5,0,0,1,2])],solution:"function zscore(values) {\n  const n = values.length;\n  const mean = values.reduce((a, b) => a + b, 0) / n;\n  const sd = Math.sqrt(values.reduce((a, x) => a + (x - mean) ** 2, 0) / n);\n  return values.map(x => sd ? (x - mean) / sd : 0);\n}",explain:"Centre on the mean, divide by the spread. Guard against sd = 0, which would otherwise give NaN."},
+{id:"m35",track:"ml",type:"code",tags:["Classical ML"],diff:1250,title:"k-Nearest Neighbours",q:"points is an array of [x, y], labels the matching class labels. Predict the label for query by majority vote of the k nearest points (Euclidean distance).",fn:"knnPredict",starter:"function knnPredict(points, labels, query, k) {\n  \n}",tests:[T([[[0,0],[1,0],[0,1],[5,5],[6,5],[5,6]],["a","a","a","b","b","b"],[1,1],3],"a"),T([[[0,0],[1,0],[0,1],[5,5],[6,5],[5,6]],["a","a","a","b","b","b"],[5,4],3],"b"),T([[[0,0],[1,0],[0,1],[5,5],[6,5],[5,6]],["a","a","a","b","b","b"],[3,3],1],"b"),T([[[0,0],[1,0],[0,1],[5,5],[6,5],[5,6]],["a","a","a","b","b","b"],[2,2],5],"a")],solution:"function knnPredict(points, labels, query, k) {\n  const near = points\n    .map((p, i) => [Math.hypot(p[0] - query[0], p[1] - query[1]), labels[i]])\n    .sort((a, b) => a[0] - b[0])\n    .slice(0, k);\n  const votes = {};\n  for (const [, l] of near) votes[l] = (votes[l] || 0) + 1;\n  return Object.keys(votes).sort((a, b) => votes[b] - votes[a])[0];\n}",explain:"Compute every distance, keep the k smallest, count labels. O(n log n) with sorting; a heap makes it O(n log k)."},
+{id:"m36",track:"ml",type:"code",tags:["Optimization"],diff:1350,title:"One Gradient Descent Step",q:"Linear regression ŷ = w·x + b with MSE loss. Return [newW, newB] after ONE gradient descent step with learning rate lr. dL/dw = (2/n) Σ (ŷ − y)·x and dL/db = (2/n) Σ (ŷ − y).",fn:"gradientStep",starter:"function gradientStep(w, b, xs, ys, lr) {\n  // return [newW, newB]\n}",tests:[T([0,0,[1,2,3],[2,4,6],0.1],[1.8666666666666665,0.8]),T([2,0,[1,2,3],[2,4,6],0.1],[2,0]),T([1,1,[0,1],[1,3],0.5],[1.5,1.5])],solution:"function gradientStep(w, b, xs, ys, lr) {\n  let dw = 0, db = 0;\n  const n = xs.length;\n  for (let i = 0; i < n; i++) {\n    const err = w * xs[i] + b - ys[i];\n    dw += err * xs[i];\n    db += err;\n  }\n  return [w - lr * (2 / n) * dw, b - lr * (2 / n) * db];\n}",explain:"Compute the error for each point, accumulate both gradients, then move against them. A perfect fit has zero gradient, so it stays put."},
 // C++
 {id:"c1",track:"cpp",type:"flash",tags:["Pointers"],diff:900,q:"Pointer vs reference in C++?",a:"A pointer holds an address, can be null, can be reseated, and uses * / -> to access.\nA reference is an alias: it must be bound at creation, can't be null in valid code, and can't be reseated."},
 {id:"c2",track:"cpp",type:"flash",tags:["Memory"],diff:1150,q:"What is RAII?",a:"Resource Acquisition Is Initialization: tie a resource (memory, file, lock) to an object's lifetime. The constructor acquires it and the destructor releases it, so cleanup happens even when exceptions are thrown.\nExamples: std::vector, std::unique_ptr, std::lock_guard."},
@@ -319,7 +334,12 @@ const BANK=[
 {id:"s8",track:"cs",type:"mcq",tags:["System Design"],diff:1450,q:"Main benefit of consistent hashing in a distributed cache?",options:["Encrypts keys","Only about 1/n of keys move when a node joins or leaves","Guarantees strong consistency","Removes the need for replication"],ans:1,explain:"With mod-n hashing almost every key remaps when n changes. A hash ring moves only the keys next to the changed node."},
 {id:"s20",track:"cs",type:"flash",tags:["OS"],diff:900,q:"Process vs thread?",a:"A process has its own address space and resources; isolated, heavier to create and switch.\nThreads share their process's memory and files; cheap to switch, but shared state needs synchronisation."},
 {id:"s21",track:"cs",type:"flash",tags:["DBMS"],diff:1150,q:"Why do databases use B+ trees for indexes?",a:"High fan-out keeps the tree shallow (few disk reads); all data sits in leaves linked in order, so range scans are fast; and the tree stays balanced on inserts and deletes."},
-{id:"s22",track:"cs",type:"flash",tags:["System Design"],diff:1300,q:"State the CAP theorem.",a:"During a network partition, a distributed system must choose between Consistency (every read sees the latest write) and Availability (every request gets a response).\nWithout a partition you can have both."}
+{id:"s22",track:"cs",type:"flash",tags:["System Design"],diff:1300,q:"State the CAP theorem.",a:"During a network partition, a distributed system must choose between Consistency (every read sees the latest write) and Availability (every request gets a response).\nWithout a partition you can have both."},
+// CS code
+{id:"s30",track:"cs",type:"code",tags:["OS"],diff:1150,title:"FIFO Page Faults",q:"Simulate FIFO page replacement. Given a page reference string and the number of frames, return how many page faults occur. Frames start empty.",fn:"fifoPageFaults",starter:"function fifoPageFaults(pages, frames) {\n  \n}",tests:[T([[7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0,1,7,0,1],3],15),T([[1,2,3,4,1,2,5,1,2,3,4,5],3],9),T([[1,2,3,4,1,2,5,1,2,3,4,5],4],10),T([[1,1,1],1],1)],solution:"function fifoPageFaults(pages, frames) {\n  const q = []; let faults = 0;\n  for (const p of pages) {\n    if (!q.includes(p)) {\n      faults++;\n      q.push(p);\n      if (q.length > frames) q.shift();\n    }\n  }\n  return faults;\n}",explain:"Evict the page that arrived first. Tests 2 and 3 show Belady's anomaly: with FIFO, more frames can cause more faults."},
+{id:"s31",track:"cs",type:"code",tags:["OS"],diff:1250,title:"LRU Page Faults",q:"Simulate LRU page replacement: on a fault with full frames, evict the page used least recently. Return the number of page faults.",fn:"lruPageFaults",starter:"function lruPageFaults(pages, frames) {\n  \n}",tests:[T([[7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0,1,7,0,1],3],12),T([[1,2,3,4,1,2,5,1,2,3,4,5],3],10),T([[1,2,3,4,1,2,5,1,2,3,4,5],4],8),T([[1,2,1,3,1],2],3)],solution:"function lruPageFaults(pages, frames) {\n  const q = []; let faults = 0; // front = least recently used\n  for (const p of pages) {\n    const i = q.indexOf(p);\n    if (i >= 0) q.splice(i, 1);\n    else { faults++; if (q.length === frames) q.shift(); }\n    q.push(p);\n  }\n  return faults;\n}",explain:"Move a page to the back every time it is used; evict from the front. LRU is a stack algorithm, so unlike FIFO it never suffers Belady's anomaly."},
+{id:"s32",track:"cs",type:"code",tags:["Networks"],diff:900,title:"Usable Hosts in a Subnet",q:"Given a CIDR block like \"192.168.1.0/24\", return the number of usable host addresses (total minus network and broadcast). Return 0 for /31 and /32.",fn:"usableHosts",starter:"function usableHosts(cidr) {\n  \n}",tests:[T(["192.168.1.0/24"],254),T(["10.0.0.0/30"],2),T(["172.16.0.0/16"],65534),T(["192.168.5.16/28"],14),T(["10.0.0.1/32"],0)],solution:"function usableHosts(cidr) {\n  const prefix = Number(cidr.split('/')[1]);\n  return prefix >= 31 ? 0 : 2 ** (32 - prefix) - 2;\n}",explain:"A /p block has 2^(32−p) addresses. Two are reserved: the network address and the broadcast address."},
+{id:"s33",track:"cs",type:"code",tags:["OS"],diff:1300,title:"Round Robin Average Wait",q:"All processes arrive at time 0 in the given order. Simulate round-robin scheduling with the given time quantum and return the average waiting time (finish time − burst time, averaged).",fn:"roundRobinAvgWait",starter:"function roundRobinAvgWait(bursts, quantum) {\n  \n}",tests:[T([[24,3,3],4],5.666666666666667),T([[5],2],0),T([[2,2],1],1.5),T([[10,5,8],2],12)],solution:"function roundRobinAvgWait(bursts, quantum) {\n  const left = bursts.slice(), finish = [];\n  const queue = bursts.map((_, i) => i);\n  let t = 0;\n  while (queue.length) {\n    const i = queue.shift();\n    const run = Math.min(quantum, left[i]);\n    t += run; left[i] -= run;\n    if (left[i] > 0) queue.push(i); else finish[i] = t;\n  }\n  return finish.reduce((s, f, i) => s + f - bursts[i], 0) / bursts.length;\n}",explain:"Use a queue: run each process for up to one quantum, put it back if unfinished. The first test is the classic textbook example: 17/3 ≈ 5.67."}
 ];
 const NOTES={
 "Arrays":["Prefix sums turn range-sum queries into O(1).","Sort first when order doesn't matter: unlocks two pointers and binary search.","Watch for in-place tricks: swap, reverse, mark with negatives."],
@@ -339,6 +359,7 @@ const NOTES={
 "Transformers":["Attention = softmax(QKᵀ/√dₖ)·V.","Multi-head lets the model attend to different relations at once.","Positional encodings supply order information."],
 "Ensembles":["Bagging lowers variance (random forest).","Boosting lowers bias by fitting residuals (XGBoost, LightGBM)."],
 "Clustering":["k-means needs k; use the elbow or silhouette score to choose it.","Scale features first: distance-based."],
+"Classical ML":["k-NN has no training step; it predicts by a vote of the k nearest points.","Scale features before any distance-based model.","Small k overfits (noisy), large k underfits (too smooth); pick k on validation data."],
 "Data":["Split before any fitting, including scalers and encoders.","Check for duplicates across train and test."],
 "Neural Nets":["ReLU is the default hidden activation.","Output layer: sigmoid for binary or multi-label, softmax for multi-class."],
 "Pointers":["& takes an address, * dereferences.","Prefer references for non-null parameters.","Never return a pointer or reference to a local."],
@@ -355,14 +376,21 @@ const TIERS=[[900,"Rookie"],[1100,"Apprentice"],[1300,"Practitioner"],[1500,"Spe
 
 /* ---------- state ---------- */
 const KEY="grindstone.v1";
-const fresh=()=>({track:"dsa",mode:"mix",ratings:{dsa:1000,ml:1000,cpp:1000,cs:1000},hist:{dsa:[1000],ml:[1000],cpp:[1000],cs:[1000]},mastery:{},seen:{},review:{},answered:0,correct:0,xp:0,dayXp:0,day:"",streak:0,lastActive:"",gen:[],recent:[]});
+const fresh=()=>({track:"dsa",mode:"mix",ratings:{dsa:1000,ml:1000,cpp:1000,cs:1000},hist:{dsa:[1000],ml:[1000],cpp:[1000],cs:[1000]},mastery:{},tagN:{},seen:{},review:{},box:{},srs:{},skips:{},answered:0,correct:0,xp:0,dayXp:0,day:"",streak:0,lastActive:"",gen:[],recent:[]});
 let S=fresh();
 try{const raw=localStorage.getItem(KEY);if(raw)S=Object.assign(fresh(),JSON.parse(raw))}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
-const today=()=>new Date().toISOString().slice(0,10);
-if(S.day!==today()){S.day=today();S.dayXp=0}
+// Local calendar dates, so the day rolls over at the viewer's midnight (not UTC)
+const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const today=()=>ymd(new Date());
+const yesterday=()=>{const d=new Date();d.setDate(d.getDate()-1);return ymd(d)};
+const liveStreak=()=>S.lastActive===today()||S.lastActive===yesterday()?S.streak:0;
+const rollDay=()=>{if(S.day!==today()){S.day=today();S.dayXp=0}};
+rollDay();
+const SRS_GAP=[0,9,20,45,100]; // answers until a correct question comes back for a refresh, by box
 
-let cur=null,curReason=[],answered=false,attempts=0;
+let cur=null,curReason=[],answered=false,attempts=0,curOrder=[],aiCtl=null;
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const all=()=>BANK.concat(S.gen);
@@ -388,6 +416,7 @@ function pick(opts={}){
     if(due.length)p=due;else if(later.length)p=later;
   }
   const recent=new Set(S.recent.slice(-Math.min(8,Math.max(1,p.length-2))));
+  const lastTypes=S.recent.slice(-2).map(id=>(byId(id)||{}).type);
   let best=null,bestScore=-1e9,bestWhy=[];
   for(const q of p){
     if(cur&&q.id===cur.id&&p.length>1)continue;
@@ -396,12 +425,19 @@ function pick(opts={}){
     if(gap<120)why.push(["Matches your level ("+q.diff+" vs "+Math.round(r)+")",""]);
     const weakest=Math.min(...q.tags.map(mast));
     sc+=(0.6-weakest)*60;
-    if(weakest<0.45)why.push(["Weak spot: "+q.tags.find(t=>mast(t)===weakest),"hot"]);
+    const weakTag=q.tags.find(t=>mast(t)===weakest);
+    if(weakest<0.45&&S.tagN[weakTag])why.push(["Weak spot: "+weakTag,"hot"]);
     const due=S.review[q.id]!==undefined&&S.review[q.id]<=S.answered;
     if(due){sc+=45;why.push(["Mistake due for review","hot"])}
     const seen=S.seen[q.id];
-    if(!seen){sc+=12;why.push(["New to you",""])}else if(seen.ok&&!due)sc-=40;
-    if(recent.has(q.id))sc-=80;
+    const refresh=seen&&seen.ok&&S.srs[q.id]!==undefined&&S.srs[q.id]<=S.answered;
+    if(!seen){sc+=12;why.push(["New to you",""])}
+    else if(refresh){sc+=30+gap/16;why.push(["Spaced refresh: you got this right a while ago",""])}
+    else if(seen.ok&&!due)sc-=40;
+    if(recent.has(q.id)&&!refresh&&!due)sc-=80;
+    else if(recent.has(q.id)&&S.recent.slice(-3).includes(q.id))sc-=80;
+    if(S.skips[q.id]!==undefined&&S.answered-S.skips[q.id]<4)sc-=35;
+    if(S.mode==="mix"&&!opts.tag&&!opts.reviewOnly&&lastTypes.length===2&&lastTypes.every(t=>t===q.type))sc-=20;
     if(q.ai)why.push(["AI-generated twin","ai"]);
     sc+=Math.random()*10;
     if(sc>bestScore){bestScore=sc;best=q;bestWhy=why}
@@ -409,7 +445,9 @@ function pick(opts={}){
   return {q:best,why:bestWhy.length?bestWhy:[["Keeps your practice varied",""]]};
 }
 function load(q,why){
+  if(aiCtl)aiCtl.abort();aiCtl=new AbortController();
   cur=q;curReason=why||[];answered=false;attempts=0;
+  curOrder=q.type==="mcq"?shuffle([...q.options.keys()]):[];
   S.recent.push(q.id);S.recent=S.recent.slice(-12);
   renderCard();renderSimilar();renderNotes();save();
 }
@@ -423,13 +461,16 @@ function grade(score){
   const d=Math.round(32*(score-exp));
   S.ratings[t]=Math.max(400,r+d);
   S.hist[t].push(S.ratings[t]);S.hist[t]=S.hist[t].slice(-40);
-  for(const tag of cur.tags)S.mastery[tag]=+(mast(tag)*0.7+score*0.3).toFixed(3);
+  for(const tag of cur.tags){S.mastery[tag]=+(mast(tag)*0.7+score*0.3).toFixed(3);S.tagN[tag]=(S.tagN[tag]||0)+1}
   const s=S.seen[cur.id]||{n:0,ok:false};s.n++;s.ok=score>=0.6;S.seen[cur.id]=s;
   S.answered++;if(score>=0.6)S.correct++;
-  if(score<0.6)S.review[cur.id]=S.answered+3;else delete S.review[cur.id];
+  delete S.skips[cur.id];
+  if(score<0.6){S.review[cur.id]=S.answered+3;S.box[cur.id]=0;delete S.srs[cur.id]}
+  else{delete S.review[cur.id];const b=Math.min(4,(S.box[cur.id]||0)+1);S.box[cur.id]=b;S.srs[cur.id]=S.answered+SRS_GAP[b]}
+  rollDay();
   const gain=Math.round((8+cur.diff/100)*Math.max(score,0.15));
   S.xp+=gain;S.dayXp+=gain;
-  if(S.lastActive!==today()){const y=new Date(Date.now()-864e5).toISOString().slice(0,10);S.streak=S.lastActive===y?S.streak+1:1;S.lastActive=today()}
+  if(S.lastActive!==today()){S.streak=S.lastActive===yesterday()?S.streak+1:1;S.lastActive=today()}
   save();renderSide();
   const el=$("#delta");el.textContent=(d>=0?"+":"")+d;el.className="delta "+(d>=0?"up":"down");void el.offsetWidth;el.classList.add("show");
   return {d,gain};
@@ -449,7 +490,7 @@ function renderSide(){
   const t=S.track,r=Math.round(S.ratings[t]);
   $("#lvlTrack").textContent=TRACKS[t]+" level";
   $("#rating").textContent=r;$("#tier").textContent=tierOf(r);
-  $("#streak").textContent=S.streak;$("#xp").textContent=S.xp;
+  const st=liveStreak();$("#streak").textContent=st;$("#streakU").textContent=st===1?"day":"days";$("#xp").textContent=S.xp;
   $("#acc").textContent=S.answered?Math.round(100*S.correct/S.answered)+"%":"–";
   // sparkline
   const h=S.hist[t].length>1?S.hist[t]:[S.hist[t][0],S.hist[t][0]];
@@ -461,9 +502,12 @@ function renderSide(){
   $("#sparkL").textContent=Math.round(h[0]);$("#sparkR").textContent=r+" now · "+(S.hist[t].length-1)+" solved";
   // mastery bars
   const tags=[...new Set(all().filter(q=>q.track===t).flatMap(q=>q.tags))];
-  tags.sort((a,b)=>mast(a)-mast(b));
-  $("#bars").innerHTML=tags.map(tag=>{const m=Math.round(mast(tag)*100);const c=m<45?"var(--coral)":m<70?"var(--mango)":"var(--mint)";
-    return `<button class="bar" data-tag="${esc(tag)}"><span>${esc(tag)}${m<45?'<span class="weak">weak</span>':""}</span><span>${m}%</span><i><b style="width:${m}%;background:${c}"></b></i></button>`}).join("");
+  const key=tag=>S.tagN[tag]?mast(tag):0.62; // untried topics sit between weak and strong
+  tags.sort((a,b)=>key(a)-key(b));
+  $("#bars").innerHTML=tags.map(tag=>{const n=S.tagN[tag]||0;
+    if(!n)return `<button class="bar" data-tag="${esc(tag)}" title="Not practised yet"><span>${esc(tag)}<span class="new">new</span></span><span>–</span><i><b style="width:0"></b></i></button>`;
+    const m=Math.round(mast(tag)*100);const c=m<45?"var(--coral)":m<70?"var(--mango)":"var(--mint)";
+    return `<button class="bar" data-tag="${esc(tag)}" title="${n} answered"><span>${esc(tag)}${m<45?'<span class="weak">weak</span>':""}</span><span>${m}%</span><i><b style="width:${m}%;background:${c}"></b></i></button>`}).join("");
   const due=Object.entries(S.review).filter(([id,a])=>a<=S.answered&&byId(id)&&byId(id).track===t).length;
   const pending=Object.keys(S.review).filter(id=>byId(id)&&byId(id).track===t).length;
   $("#dueN").textContent=due;
@@ -484,9 +528,9 @@ function renderCard(){
   let body=`<div class="cardhead"><div class="tags"><span class="type">${typeName}</span>${q.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}${q.ai?'<span class="tag" style="background:var(--lilac)">✦ AI twin</span>':""}</div>${diffBars(q.diff)}</div>`;
   if(q.title)body+=`<h2 class="qtitle">${esc(q.title)}</h2>`;
   if(q.type==="mcq"){
-    body+=`<p class="qtext">${esc(q.q)}</p><div class="opts">${q.options.map((o,i)=>`<button class="opt" data-i="${i}"><span class="k">${"ABCD"[i]}</span><span>${esc(o)}</span></button>`).join("")}</div>`;
+    body+=`<p class="qtext">${esc(q.q)}</p><div class="opts">${curOrder.map((oi,pos)=>`<button class="opt" data-i="${oi}"><span class="k">${"ABCD"[pos]}</span><span>${esc(q.options[oi])}</span></button>`).join("")}</div>`;
   }else if(q.type==="flash"){
-    body+=`<div class="flip" id="flip"><div class="flipin"><div class="face"><span class="eyebrow">Prompt</span><p style="font-size:19px;font-weight:600">${esc(q.q)}</p><span class="eyebrow">Answer it out loud, then flip</span></div><div class="face back"><span class="eyebrow">Answer</span><p>${esc(q.a)}</p></div></div></div>
+    body+=`<div class="flip" id="flip"><div class="flipin"><div class="face front"><span class="eyebrow">Prompt</span><p style="font-size:19px;font-weight:600">${esc(q.q)}</p><span class="eyebrow">Answer it out loud, then flip</span></div><div class="face back" aria-hidden="true"><span class="eyebrow">Answer</span><p>${esc(q.a)}</p></div></div></div>
     <div class="grade" id="gradeRow"><button class="btn sky" id="flipBtn">Flip card</button></div>`;
   }else{
     body+=`<p class="qtext">${esc(q.q)}</p><div class="editor"><div class="edbar"><span><i></i><i></i><i></i></span><span>${esc(q.fn)}.js · ${q.tests.length} tests</span></div><textarea id="code" spellcheck="false" aria-label="Your solution">${esc(q.starter)}</textarea></div><div class="tests" id="tests"></div>`;
@@ -494,6 +538,7 @@ function renderCard(){
   const codeBtns=q.type==="code"?`<button class="btn go" id="runBtn">▶ Run tests</button><button class="btn sm" id="solBtn">Show solution</button><button class="btn sm lilac" id="reviewAi">AI code review</button>`:"";
   body+=`<div class="actions">${codeBtns}<button class="btn sm lilac" id="hintBtn">AI hint</button><span class="spacer"></span><button class="btn sm" id="skipBtn">Skip</button><button class="btn primary" id="nextBtn" hidden>Next question →</button></div><div id="fb"></div><div id="aiOut"></div>`;
   card.innerHTML=body;card.classList.remove("enter");void card.offsetWidth;card.classList.add("enter");
+  $("#keys").textContent={mcq:"Keys: 1–4 or A–D to answer · Enter for next · S to skip",flash:"Keys: Space to flip · 1–4 to rate yourself · Enter for next",code:"Keys: Ctrl/⌘ + Enter runs tests · Tab indents"}[q.type];
   if(q.type==="code")$("#code").addEventListener("keydown",e=>{if(e.key==="Tab"){e.preventDefault();const t=e.target,s=t.selectionStart;t.value=t.value.slice(0,s)+"  "+t.value.slice(t.selectionEnd);t.selectionStart=t.selectionEnd=s+2}});
 }
 function showFeedback(ok,html){
@@ -506,9 +551,18 @@ function showFeedback(ok,html){
 function explainHTML(q){return `<p class="explain">${esc(q.explain||"")}</p>`}
 
 /* ---------- code runner (Web Worker, 2s timeout) ---------- */
-const WORKER_SRC=`onmessage=e=>{const {code,fn,tests}=e.data;let f;try{f=new Function(code+"\\n;return "+fn+";")()}catch(err){postMessage({error:"Syntax error: "+err.message});return}
+/* Compares results structurally; numbers match within 1e-6 so floating-point answers (softmax, MSE…) aren't failed on rounding. */
+const WORKER_SRC=`const eq=(a,b)=>{if(typeof a==="number"&&typeof b==="number")return Math.abs(a-b)<=1e-6*Math.max(1,Math.abs(b));
+if(Array.isArray(a)||Array.isArray(b))return Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((x,i)=>eq(x,b[i]));
+if(a&&b&&typeof a==="object"&&typeof b==="object"){const ka=Object.keys(a),kb=Object.keys(b);return ka.length===kb.length&&kb.every(k=>Object.prototype.hasOwnProperty.call(a,k)&&eq(a[k],b[k]))}
+return a===b};
+const show=v=>{const s=JSON.stringify(v);return s===undefined?String(v):s};
+onmessage=e=>{const {code,fn,tests}=e.data;let f;try{f=new Function(code+"\\n;return "+fn+";")()}catch(err){postMessage({error:"Syntax error: "+err.message});return}
 if(typeof f!=="function"){postMessage({error:"Define a function named "+fn});return}
-const res=tests.map(([args,exp])=>{try{const out=f(...JSON.parse(JSON.stringify(args)));const o=JSON.stringify(out===undefined?null:out);return {ok:o===JSON.stringify(exp),out:o,exp:JSON.stringify(exp),args:JSON.stringify(args).slice(1,-1)}}catch(err){return {ok:false,out:"Error: "+err.message,exp:JSON.stringify(exp),args:JSON.stringify(args).slice(1,-1)}}});postMessage({res})}`;
+const res=tests.map(t=>{const args=Array.isArray(t)?t[0]:undefined,exp=Array.isArray(t)?t[1]:undefined,a=show(args).slice(1,-1);
+if(!Array.isArray(args))return {ok:false,out:"Error: test arguments must be an array",exp:show(exp),args:a};
+try{const out=f(...JSON.parse(JSON.stringify(args)));const s=JSON.stringify(out);const v=s===undefined?null:JSON.parse(s);return {ok:eq(v,exp),out:show(v),exp:show(exp),args:a}}
+catch(err){return {ok:false,out:"Error: "+err.message,exp:show(exp),args:a}}});postMessage({res})}`;
 const workerURL=URL.createObjectURL(new Blob([WORKER_SRC],{type:"text/javascript"}));
 function runCode(code,fn,tests){
   return new Promise(resolve=>{
@@ -556,22 +610,22 @@ const ERR={not_granted:"Claude access was declined for this page, so AI features
 const errMsg=e=>ERR[e&&e.code]||"Couldn't reach Claude. Try again in a moment.";
 function aiBox(lbl){const o=$("#aiOut");o.innerHTML=`<div class="ai"><span class="lbl">${esc(lbl)}</span><span id="aiText">Thinking…</span></div>`;return $("#aiText")}
 function qContext(q){
-  if(q.type==="mcq")return `Multiple-choice question: ${q.q}\nOptions: ${q.options.map((o,i)=>"ABCD"[i]+") "+o).join(" | ")}`;
+  if(q.type==="mcq"){const ord=q===cur&&curOrder.length?curOrder:[...q.options.keys()];return `Multiple-choice question: ${q.q}\nOptions: ${ord.map((oi,pos)=>"ABCD"[pos]+") "+q.options[oi]).join(" | ")}`}
   if(q.type==="flash")return `Flashcard prompt: ${q.q}`;
   return `Coding problem "${q.title}": ${q.q}\nFunction signature: ${q.starter.split("\n")[0]}`;
 }
 async function onHint(){
   const s=await getSample();if(!s){toast("AI hints need Claude access, available when this page is opened in Claude.");return}
   const out=aiBox("Hint");const b=$("#hintBtn");b.disabled=true;
-  try{await s(`You are a patient tutor for a CS student. Give ONE short hint (2-3 sentences, plain text, no markdown) that nudges toward the answer without revealing it or the correct option letter.\n\n${qContext(cur)}`,{modelTier:"quick",onText:({text})=>{out.textContent=text}})}
-  catch(e){out.textContent=e.text||"";out.parentElement.classList.add("err");out.textContent+=(e.text?"\n":"")+errMsg(e)}
+  try{await s(`You are a patient tutor for a CS student. Give ONE short hint (2-3 sentences, plain text, no markdown) that nudges toward the answer without revealing it or the correct option letter.\n\n${qContext(cur)}`,{modelTier:"quick",signal:aiCtl.signal,onText:({text})=>{out.textContent=text}})}
+  catch(e){if(e&&e.code==="cancelled")return;out.textContent=e.text||"";out.parentElement.classList.add("err");out.textContent+=(e.text?"\n":"")+errMsg(e)}
   finally{b.disabled=false}
 }
 async function onReview(){
   const s=await getSample();if(!s){toast("AI review needs Claude access, available when this page is opened in Claude.");return}
   const out=aiBox("Code review");const b=$("#reviewAi");b.disabled=true;
-  try{await s(`Review this student's JavaScript solution. In under 120 words, plain text: say whether the approach is correct, its time and space complexity, and one concrete improvement. Don't paste a full solution.\n\nProblem: ${cur.q}\n\nCode:\n${$("#code").value.slice(0,4000)}`,{onText:({text})=>{out.textContent=text}})}
-  catch(e){out.textContent=(e.text?e.text+"\n":"")+errMsg(e);out.parentElement.classList.add("err")}
+  try{await s(`Review this student's JavaScript solution. In under 120 words, plain text: say whether the approach is correct, its time and space complexity, and one concrete improvement. Don't paste a full solution.\n\nProblem: ${cur.q}\n\nCode:\n${$("#code").value.slice(0,4000)}`,{signal:aiCtl.signal,onText:({text})=>{out.textContent=text}})}
+  catch(e){if(e&&e.code==="cancelled")return;out.textContent=(e.text?e.text+"\n":"")+errMsg(e);out.parentElement.classList.add("err")}
   finally{b.disabled=false}
 }
 async function onCheat(){
@@ -579,28 +633,29 @@ async function onCheat(){
   const n=$("#notes");const b=$("#cheatBtn");b.disabled=true;
   n.insertAdjacentHTML("afterbegin",'<div class="ai" id="cheat" style="margin:0 0 10px"><span class="lbl">AI cheat sheet</span><span id="cheatT">Thinking…</span></div>');
   const out=$("#cheatT");
-  try{await s(`Write a compact revision cheat sheet on ${cur.tags.join(", ")} (${TRACKS[cur.track]}) for an undergraduate. 6 bullet lines starting with "• ", each under 18 words, plain text, the most exam- and interview-relevant facts.`,{modelTier:"quick",onText:({text})=>{out.textContent=text}})}
-  catch(e){out.textContent=errMsg(e)}
+  try{await s(`Write a compact revision cheat sheet on ${cur.tags.join(", ")} (${TRACKS[cur.track]}) for an undergraduate. 6 bullet lines starting with "• ", each under 18 words, plain text, the most exam- and interview-relevant facts.`,{modelTier:"quick",signal:aiCtl.signal,onText:({text})=>{out.textContent=text}})}
+  catch(e){if(e&&e.code==="cancelled")return;out.textContent=errMsg(e)}
   finally{b.disabled=false}
 }
 async function onTwin(level){
+  const base=cur; // the question the viewer asked about, even if they move on while Claude writes
   const s=await getSample();if(!s){toast("The twin generator needs Claude access, available when this page is opened in Claude.");return}
   const btns=document.querySelectorAll("[data-twin]");btns.forEach(x=>x.disabled=true);
   const note=$("#twinNote"),prev=note.textContent;note.textContent="Claude is writing a "+level+" twin…";
-  const target=cur.diff+(level==="harder"?200:level==="easier"?-150:0);
+  const target=base.diff+(level==="harder"?200:level==="easier"?-150:0);
   const shapes={
     mcq:'{"q": string, "options": [4 strings], "ans": index 0-3 of the correct option, "explain": string (1-2 sentences)}',
     flash:'{"q": string (front of card), "a": string (back, 2-3 short lines separated by \\n)}',
     code:'{"title": string, "q": string (problem statement), "fn": string (JS function name), "starter": string (JS function stub with that name), "solution": string (complete correct JavaScript function), "tests": array of 4 [argsArray, expectedOutput] pairs using only JSON values, "explain": string (approach in 1-2 sentences)}'
   };
-  const prompt=`Create ONE new practice question that tests the same concept as the original below but is not a copy: change the scenario, numbers or twist. Target difficulty about ${target} on an Elo-like scale where 900 is easy and 1500 is hard (${level} than the original).\nTopic tags: ${cur.tags.join(", ")}.\nOriginal:\n${qContext(cur)}${cur.type==="code"?"\nCode questions must be solvable in plain JavaScript; tests must be deterministic and the solution must pass them all.":""}\n\nReply with only a JSON object of this shape:\n${shapes[cur.type]}`;
+  const prompt=`Create ONE new practice question that tests the same concept as the original below but is not a copy: change the scenario, numbers or twist. Target difficulty about ${target} on an Elo-like scale where 900 is easy and 1500 is hard (${level} than the original).\nTopic tags: ${base.tags.join(", ")}.\nOriginal:\n${qContext(base)}${base.type==="code"?"\nCode questions must be solvable in plain JavaScript; tests must be deterministic and the solution must pass them all.":""}\n\nReply with only a JSON object of this shape:\n${shapes[base.type]}`;
   try{
     const j=await s.json(prompt,{cache:false});
-    const nq={id:"g"+Date.now(),track:cur.track,type:cur.type,tags:cur.tags.slice(),diff:Math.round(target),ai:true,parent:cur.id};
-    if(cur.type==="mcq"){
+    const nq={id:"g"+Date.now(),track:base.track,type:base.type,tags:base.tags.slice(),diff:Math.round(target),ai:true,parent:base.id};
+    if(base.type==="mcq"){
       if(!j||typeof j.q!=="string"||!Array.isArray(j.options)||j.options.length<2||!(j.ans>=0&&j.ans<j.options.length))throw{code:"invalid_json"};
       Object.assign(nq,{q:j.q,options:j.options.slice(0,4).map(String),ans:+j.ans,explain:String(j.explain||"")});
-    }else if(cur.type==="flash"){
+    }else if(base.type==="flash"){
       if(!j||typeof j.q!=="string"||typeof j.a!=="string")throw{code:"invalid_json"};
       Object.assign(nq,{q:j.q,a:j.a});
     }else{
@@ -611,7 +666,7 @@ async function onTwin(level){
       Object.assign(nq,{title:String(j.title||"AI twin"),q:String(j.q),fn:String(j.fn),starter:String(j.starter||`function ${j.fn}() {\n  \n}`),solution:String(j.solution),tests:j.tests,explain:String(j.explain||"")});
     }
     S.gen.push(nq);S.gen=S.gen.slice(-40);save();
-    load(nq,[["AI-generated twin of “"+label(byId(nq.parent)||cur).slice(0,40)+"”","ai"],["Difficulty "+level,""]]);
+    load(nq,[["AI-generated twin of “"+label(byId(nq.parent)||base).slice(0,40)+"”","ai"],["Difficulty "+level,""]]);
     renderSide();note.textContent=prev;toast("New "+level+" twin ready.");
   }catch(e){
     note.textContent=e&&e.code==="bad_tests"?"The generated code twin failed its own tests, so it was discarded. Try again.":errMsg(e);
@@ -628,21 +683,53 @@ document.addEventListener("click",e=>{
   if(t.dataset.twin){onTwin(t.dataset.twin);return}
   if(t.classList.contains("opt")&&!answered){
     const i=+t.dataset.i,ok=i===cur.ans;
-    document.querySelectorAll(".opt").forEach((b,j)=>{b.disabled=true;if(j===cur.ans)b.classList.add("right");else if(j===i)b.classList.add("wrong")});
+    document.querySelectorAll(".opt").forEach(b=>{b.disabled=true;const j=+b.dataset.i;if(j===cur.ans)b.classList.add("right");else if(j===i)b.classList.add("wrong")});
     showFeedback(ok?1:0,explainHTML(cur));return;
   }
   switch(t.id){
-    case "flipBtn":$("#flip").classList.add("on");$("#gradeRow").innerHTML=`<span class="eyebrow" style="flex-basis:100%">How well did you know it?</span><button class="btn sm primary" data-g="0">Didn't know</button><button class="btn sm" data-g="0.45">Partly</button><button class="btn sm sky" data-g="0.8">Got it</button><button class="btn sm go" data-g="1">Easy</button>`;break;
+    case "flipBtn":$("#flip").classList.add("on");$("#flip .front").setAttribute("aria-hidden","true");$("#flip .back").removeAttribute("aria-hidden");
+      $("#gradeRow").innerHTML=`<span class="eyebrow" style="flex-basis:100%">How well did you know it?</span><button class="btn sm primary" data-g="0">1 · Didn't know</button><button class="btn sm" data-g="0.45">2 · Partly</button><button class="btn sm sky" data-g="0.8">3 · Got it</button><button class="btn sm go" data-g="1">4 · Easy</button>`;
+      $("#gradeRow").tabIndex=-1;$("#gradeRow").focus({preventScroll:true});break;
+    case "resetBtn":
+      if(t.dataset.armed){S=fresh();save();cur=null;renderTracks();renderModes();renderSide();next();toast("Progress reset. Fresh start.");delete t.dataset.armed;t.textContent="Reset all progress"}
+      else{t.dataset.armed="1";t.textContent="Tap again to erase everything";clearTimeout(t._h);t._h=setTimeout(()=>{delete t.dataset.armed;t.textContent="Reset all progress"},4000)}
+      break;
     case "runBtn":onRun();break;
     case "solBtn":if(!answered){showFeedback(0,explainHTML(cur)+`<pre class="sol">${esc(cur.solution)}</pre><p class="explain" style="margin-top:8px;font-size:13px">Queued for review. Try a twin to lock it in.</p>`)}break;
     case "hintBtn":onHint();break;
     case "reviewAi":onReview();break;
     case "cheatBtn":onCheat();break;
-    case "skipBtn":next();break;
+    case "skipBtn":if(!answered)S.skips[cur.id]=S.answered;next();break;
     case "nextBtn":next();break;
     case "reviewBtn":next({reviewOnly:true});break;
   }
   if(t.dataset.g!==undefined&&!answered){const g=+t.dataset.g;document.querySelectorAll("[data-g]").forEach(b=>b.disabled=true);showFeedback(g,g<0.6?'<p class="explain">Queued for review in a few questions.</p>':'<p class="explain">Locked in. It will show up less often now.</p>')}
+});
+
+/* ---------- keyboard shortcuts ---------- */
+document.addEventListener("keydown",e=>{
+  if(!cur)return;
+  const el=document.activeElement,tag=el&&el.tagName;
+  if(tag==="TEXTAREA"||tag==="INPUT"||tag==="SELECT"){
+    if(el.id==="code"&&e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();const b=$("#runBtn");if(b&&!b.disabled)b.click()}
+    return;
+  }
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  const k=e.key.length===1?e.key.toLowerCase():e.key;
+  if(tag==="BUTTON"&&(k===" "||k==="Enter"))return; // let the focused button handle it
+  if(cur.type==="mcq"&&!answered){
+    const idx="1234".includes(k)?"1234".indexOf(k):"abcd".indexOf(k);
+    const b=idx>=0&&document.querySelectorAll(".opt")[idx];
+    if(b){e.preventDefault();b.click();return}
+  }
+  if(cur.type==="flash"){
+    const flip=$("#flipBtn");
+    if((k===" "||k==="f")&&flip){e.preventDefault();flip.click();return}
+    const gi="1234".indexOf(k),g=gi>=0&&!answered&&document.querySelectorAll("[data-g]")[gi];
+    if(g){e.preventDefault();g.click();return}
+  }
+  if(k==="Enter"){const n=$("#nextBtn");if(n&&!n.hidden){e.preventDefault();n.click()}return}
+  if(k==="s"&&!answered){const sk=$("#skipBtn");if(sk&&!sk.hidden)sk.click()}
 });
 
 /* ---------- boot ---------- */
