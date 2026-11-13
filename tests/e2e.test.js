@@ -212,6 +212,26 @@ const results = []; const ok=(n,c,extra='')=>results.push(`${c?'PASS':'FAIL'}  $
   ok('yesterday\'s streak still counts and grows today', streak.y==='5 days'&&streak.after==='6 days', JSON.stringify(streak));
   ok('"1 day" singular / "days" plural', streak.one==='day');
 
+  // backup: export / import
+  const bk0 = await q2.evaluate(()=>({xp:S.xp,answered:S.answered,r:S.ratings.dsa,seen:Object.keys(S.seen).length}));
+  const [dl] = await Promise.all([q2.waitForEvent('download'), q2.click('#exportBtn')]);
+  const backup = await require('fs').promises.readFile(await dl.path(),'utf8'); const bj = JSON.parse(backup);
+  ok('export downloads a dated JSON backup', /^grindstone-progress-\d{4}-\d{2}-\d{2}\.json$/.test(dl.suggestedFilename()) && bj.app==='grindstone' && bj.state.xp===bk0.xp, dl.suggestedFilename());
+  await q2.evaluate(()=>{S=fresh();save();renderSide()});
+  const imp = buf=>q2.setInputFiles('#importFile',{name:'b.json',mimeType:'application/json',buffer:Buffer.from(buf)});
+  await imp(backup); await q2.waitForTimeout(150);
+  const restored = await q2.evaluate(()=>({xp:S.xp,answered:S.answered,r:S.ratings.dsa,seen:Object.keys(S.seen).length,ls:JSON.parse(localStorage.getItem(KEY)).xp,ui:$('#xp').textContent}));
+  ok('import restores progress, saves it and updates the UI', restored.xp===bk0.xp&&restored.answered===bk0.answered&&restored.r===bk0.r&&restored.seen===bk0.seen&&restored.ls===bk0.xp&&restored.ui===String(bk0.xp), JSON.stringify(restored));
+  ok('import toast confirms the restore', /restored/i.test(await q2.textContent('#toast')));
+  await imp('{not json'); await q2.waitForTimeout(100);
+  ok('invalid JSON is rejected and progress kept', /valid JSON/.test(await q2.textContent('#toast')) && await q2.evaluate(x=>S.xp===x,bk0.xp));
+  await imp(JSON.stringify({hello:'world'})); await q2.waitForTimeout(100);
+  ok('non-Grindstone JSON is rejected', /doesn't look like/.test(await q2.textContent('#toast')) && await q2.evaluate(x=>S.xp===x,bk0.xp));
+  const clean = await q2.evaluate(()=>{const s=parseBackup(JSON.stringify({app:'grindstone',state:{ratings:{dsa:'abc',ml:99999},xp:'lots',track:'zzz',mode:'weird',seen:[1,2],
+    gen:[{id:'g1',track:'dsa',type:'mcq',q:'?',tags:['DP'],diff:1000,options:['a','b'],ans:5},{id:'g2',track:'ml',type:'flash',q:'Q',a:'A',tags:['Basics'],diff:900},{id:'d1',track:'dsa',type:'flash',q:'Q',a:'A',tags:[],diff:900}]}}));
+    return {dsa:s.ratings.dsa,ml:s.ratings.ml,cpp:s.ratings.cpp,xp:s.xp,track:s.track,mode:s.mode,seen:Array.isArray(s.seen),gen:s.gen.map(q=>q.id)}});
+  ok('import sanitises bad fields, clamps ratings and drops broken twins', clean.dsa===1000&&clean.ml===3000&&clean.cpp===1000&&clean.xp===0&&clean.track==='dsa'&&clean.mode==='mix'&&!clean.seen&&clean.gen.join()==='g2', JSON.stringify(clean));
+
   // reset
   await q2.click('#resetBtn');
   ok('first Reset click only asks to confirm', /Tap again/.test(await q2.textContent('#resetBtn')) && await q2.evaluate(()=>S.answered>0));
