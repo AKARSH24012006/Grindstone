@@ -16,6 +16,7 @@ Adaptive practice for DSA, Machine Learning, C++ and CS core subjects. Pick what
 - **Topic mastery bars:** tap any topic to drill it; topics you haven't tried show *new* instead of a made-up score
 - **Daily XP goal, streaks and accuracy**, saved in the browser (`localStorage`). Days roll over at your local midnight, and a broken streak shows 0
 - **Keyboard shortcuts:** 1–4 or A–D to answer, Space to flip, 1–4 to rate a flashcard, Enter for next, S to skip, Ctrl/⌘ + Enter to run code
+- **Backup & restore:** export your progress (ratings, streak, XP, review queue, AI twins) to a JSON file and import it on another browser or device. Imports are validated: bad files are rejected without touching your progress, ratings are clamped and broken twins are dropped
 - **Reset progress** with a two-tap confirmation
 - **AI features (when opened inside Claude):** twin generator (same / easier / harder), hints, code review and topic cheat sheets. Generated code twins are verified against their own tests before they're shown, a pending AI reply is cancelled when you move to another question, and a twin is always built from the question you asked about.
 
@@ -36,7 +37,7 @@ The AI buttons use Claude's artifact runtime, so they only work when the page is
 
 ## Tests
 
-A Playwright end-to-end suite (124 checks) covers every feature: question bank integrity, every reference solution passing in the real code runner, MCQ/flashcard/code grading, option shuffling, keyboard shortcuts, the tolerant checker, rating going up and down, syntax errors, the infinite-loop timeout, every track × mode combo, topic drill, similar questions, spaced repetition, skip handling, streaks and local-midnight rollover (tested in IST), reset, progress surviving a reload, no console errors, and no sideways scroll at phone width. The AI features are tested against a mock Claude: hints, cheat sheets, code review, cancellation, and twin generation including rejected and self-failing twins.
+A Playwright end-to-end suite (130 checks) covers every feature: question bank integrity, every reference solution passing in the real code runner, MCQ/flashcard/code grading, option shuffling, keyboard shortcuts, the tolerant checker, rating going up and down, syntax errors, the infinite-loop timeout, every track × mode combo, topic drill, similar questions, spaced repetition, skip handling, streaks and local-midnight rollover (tested in IST), export/import backups (including rejecting bad files), reset, progress surviving a reload, no console errors, and no sideways scroll at phone width. The AI features are tested against a mock Claude: hints, cheat sheets, code review, cancellation, and twin generation including rejected and self-failing twins.
 
 ```bash
 npm install
